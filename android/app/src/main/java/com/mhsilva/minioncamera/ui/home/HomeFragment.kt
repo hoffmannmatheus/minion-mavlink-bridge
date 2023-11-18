@@ -45,6 +45,9 @@ class HomeFragment : Fragment() {
         viewModel.connectionStatus.observe(viewLifecycleOwner) {
             handleStatusUpdate(it)
         }
+        viewModel.mavlinkMode.observe(viewLifecycleOwner) {
+            messageTextView.text = it
+        }
 
         return root
     }
@@ -58,6 +61,7 @@ class HomeFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        viewModel.teardownBluetooth()
         _binding = null
     }
 
@@ -86,7 +90,7 @@ class HomeFragment : Fragment() {
             }
 
             ConnectionStatus.CONNECTED -> {
-                messageTextView.text = getString(R.string.bluetooth_connected)
+                messageTextView.text = "" // wait for mavlink state updates
             }
 
             ConnectionStatus.ERROR -> {

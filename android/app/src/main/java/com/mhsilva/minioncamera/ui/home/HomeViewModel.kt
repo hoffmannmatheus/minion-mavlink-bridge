@@ -17,20 +17,30 @@ class HomeViewModel : ViewModel() {
     }
 
     private val _connectionStatus = MutableLiveData(ConnectionStatus.SETTING_UP)
+    private val _mavLinkMode = MutableLiveData<String?>(null)
     private var bluetoothHelper: BluetoothHelper? = null
 
     val connectionStatus: LiveData<ConnectionStatus> = _connectionStatus
+    val mavlinkMode: LiveData<String?> = _mavLinkMode
 
     fun setupBluetooth(context: Context) {
         _connectionStatus.value = ConnectionStatus.STANDING_BY
         bluetoothHelper = BluetoothHelper(context, object : BluetoothHelperListener {
+            // From background thread, need to use postValue for data updates
             override fun onConnected() {
-                _connectionStatus.postValue(ConnectionStatus.CONNECTED) // from background thread
+                _connectionStatus.postValue(ConnectionStatus.CONNECTED)
             }
             override fun onConnectFailed() {
-                _connectionStatus.postValue(ConnectionStatus.ERROR) // from background thread
+                _connectionStatus.postValue(ConnectionStatus.ERROR)
+            }
+            override fun onMAVLinkStateUpdate(value: String) {
+                _mavLinkMode.postValue(value)
             }
         })
+    }
+
+    fun teardownBluetooth() {
+        bluetoothHelper?.disconnect()
     }
 
     fun connect(context: Context) {
