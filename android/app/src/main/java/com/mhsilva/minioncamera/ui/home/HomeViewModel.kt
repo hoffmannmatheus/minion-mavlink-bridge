@@ -25,10 +25,10 @@ class HomeViewModel : ViewModel() {
         _connectionStatus.value = ConnectionStatus.STANDING_BY
         bluetoothHelper = BluetoothHelper(context, object : BluetoothHelperListener {
             override fun onConnected() {
-                _connectionStatus.value = ConnectionStatus.CONNECTED
+                _connectionStatus.postValue(ConnectionStatus.CONNECTED) // from background thread
             }
             override fun onConnectFailed() {
-                _connectionStatus.value = ConnectionStatus.ERROR
+                _connectionStatus.postValue(ConnectionStatus.ERROR) // from background thread
             }
         })
     }
