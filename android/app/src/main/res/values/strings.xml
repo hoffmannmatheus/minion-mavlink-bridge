@@ -2,4 +2,13 @@
     <string name="app_name">MinionCamera</string>
     <string name="title_home">Home</string>
     <string name="title_library">Library</string>
+
+    <string name="status">Status: %1$s</string>
+    <string name="bluetooth_connected">Connected</string>
+    <string name="bluetooth_connecting">Connecting…</string>
+    <string name="bluetooth_ready">Ready to connect</string>
+    <string name="bluetooth_error_permissions">Please provide the necessary permissions and try again</string>
+    <string name="bluetooth_error_unavailable">Sorry, this device does not support Bluetooth</string>
+    <string name="bluetooth_error_disabled">Please activate Bluetooth on your device</string>
+    <string name="bluetooth_error_unknown">Unknown error happened, please try again</string>
 </resources>
