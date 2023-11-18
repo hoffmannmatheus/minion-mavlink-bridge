@@ -26,7 +26,7 @@ const char* deviceServiceCharacteristicUuid = "6148df43-7c4c-4964-a1ad-bfbfb9032
 int mavlinkValue = 42;
 
 BLEService mavlinkService(deviceServiceUuid); 
-BLEStringCharacteristic mavlinkCharacteristic(deviceServiceCharacteristicUuid, BLERead | BLEWrite | BLENotify | BLEIndicate, 40);
+BLEStringCharacteristic mavlinkCharacteristic(deviceServiceCharacteristicUuid, BLERead | BLENotify | BLEIndicate, 128);
 
 void setup() {
   Serial.begin(9600);
