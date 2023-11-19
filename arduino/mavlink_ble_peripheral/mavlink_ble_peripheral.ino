@@ -30,17 +30,13 @@ BLEStringCharacteristic mavlinkCharacteristic(deviceServiceCharacteristicUuid, B
 
 void setup() {
   Serial.begin(9600);
-  while (!Serial);  
+  //while (!Serial);  Debug only
   
   pinMode(LEDR, OUTPUT);
   pinMode(LEDG, OUTPUT);
   pinMode(LEDB, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
-  
-  digitalWrite(LEDR, HIGH);
-  digitalWrite(LEDG, HIGH);
-  digitalWrite(LEDB, HIGH);
-  digitalWrite(LED_BUILTIN, LOW);
+  setColor(-1);
 
   if (!BLE.begin()) {
     Serial.println("- Starting Bluetooth® Low Energy module failed!");
