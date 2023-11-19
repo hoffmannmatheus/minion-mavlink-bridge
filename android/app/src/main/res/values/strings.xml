@@ -11,4 +11,7 @@
     <string name="bluetooth_error_unavailable">Sorry, this device does not support Bluetooth</string>
     <string name="bluetooth_error_disabled">Please activate Bluetooth on your device</string>
     <string name="bluetooth_error_unknown">Unknown error happened, please try again</string>
+
+    <string name="button_connect">Connect</string>
+    <string name="button_disconnect">Disconnect</string>
 </resources>

@@ -30,6 +30,11 @@ class HomeViewModel : ViewModel() {
             override fun onConnected() {
                 _connectionStatus.postValue(ConnectionStatus.CONNECTED)
             }
+
+            override fun onDisconnected() {
+                _connectionStatus.postValue(ConnectionStatus.STANDING_BY)
+            }
+
             override fun onConnectFailed() {
                 _connectionStatus.postValue(ConnectionStatus.ERROR)
             }
@@ -39,8 +44,8 @@ class HomeViewModel : ViewModel() {
         })
     }
 
-    fun teardownBluetooth() {
-        bluetoothHelper?.disconnect()
+    fun disconnect() {
+        bluetoothHelper?.disconnect(onPurpose = true)
     }
 
     fun connect(context: Context) {

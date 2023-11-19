@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_first="true" android:drawable="@drawable/connection_status_connected" />
+    <item android:state_last="true"  android:drawable="@drawable/connection_status_disconnected" />
+    <item android:drawable="@drawable/connection_status_connecting" />
+</selector>

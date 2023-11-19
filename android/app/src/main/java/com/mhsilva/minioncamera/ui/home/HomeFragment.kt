@@ -7,6 +7,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.TextView
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
@@ -18,12 +19,14 @@ import com.mhsilva.minioncamera.databinding.FragmentHomeBinding
 class HomeFragment : Fragment() {
 
     private var _binding: FragmentHomeBinding? = null
-
     // These properties are only valid between onCreateView and onDestroyView.
     private val binding get() = _binding!!
     private lateinit var viewModel: HomeViewModel
+
     private lateinit var statusTextView: TextView
     private lateinit var messageTextView: TextView
+    private lateinit var statusView: View
+    private lateinit var connectButton: Button
 
     companion object {
         const val REQUEST_ENABLE_BT = 42
@@ -41,6 +44,8 @@ class HomeFragment : Fragment() {
 
         statusTextView = binding.labelStatus
         messageTextView = binding.labelMessage
+        statusView = binding.statusIndicator
+        connectButton = binding.connectButton
 
         viewModel.connectionStatus.observe(viewLifecycleOwner) {
             handleStatusUpdate(it)
@@ -48,7 +53,12 @@ class HomeFragment : Fragment() {
         viewModel.mavlinkMode.observe(viewLifecycleOwner) {
             messageTextView.text = it
         }
-
+        connectButton.setOnClickListener {
+            when (viewModel.connectionStatus.value) {
+                ConnectionStatus.STANDING_BY, ConnectionStatus.ERROR -> viewModel.connect(requireContext())
+                else -> viewModel.disconnect()
+            }
+        }
         return root
     }
 
@@ -61,46 +71,41 @@ class HomeFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        viewModel.teardownBluetooth()
+        viewModel.disconnect()
         _binding = null
     }
+
+    private val stateToMessageMap = mapOf(
+        ConnectionStatus.STANDING_BY to R.string.bluetooth_ready,
+        ConnectionStatus.BLUETOOTH_DISABLED to R.string.bluetooth_error_disabled,
+        ConnectionStatus.BLUETOOTH_UNAVAILABLE to R.string.bluetooth_error_unavailable,
+        ConnectionStatus.CONNECTING to R.string.bluetooth_connecting,
+        ConnectionStatus.ERROR to R.string.bluetooth_error_unknown,
+        ConnectionStatus.NEED_PERMISSIONS to R.string.bluetooth_error_permissions
+    )
 
     private fun handleStatusUpdate(connectionStatus: ConnectionStatus) {
         Log.d(TAG, "handleStatusUpdate: ${connectionStatus.name}")
         statusTextView.text = getString(R.string.status, connectionStatus.name)
-        when (connectionStatus) {
-            ConnectionStatus.SETTING_UP -> {
-                /* cool */
-            }
+        stateToMessageMap.getOrDefault(connectionStatus, null).let { resId ->
+            messageTextView.text = if(resId != null) getString(resId) else ""
+        }
 
-            ConnectionStatus.STANDING_BY -> {
-                messageTextView.text = getString(R.string.bluetooth_ready)
-            }
+        val state = when (connectionStatus) {
+            ConnectionStatus.CONNECTED -> android.R.attr.state_first
+            ConnectionStatus.ERROR -> android.R.attr.state_last
+            else -> android.R.attr.state_middle
+        }
+        statusView.background.state = intArrayOf(state)
 
-            ConnectionStatus.BLUETOOTH_DISABLED -> {
-                messageTextView.text = getString(R.string.bluetooth_error_disabled)
-            }
+        val buttonText = when (connectionStatus) {
+            ConnectionStatus.ERROR, ConnectionStatus.STANDING_BY -> R.string.button_connect
+            else -> R.string.button_disconnect
+        }
+        connectButton.text = getString(buttonText)
 
-            ConnectionStatus.BLUETOOTH_UNAVAILABLE -> {
-                messageTextView.text = getString(R.string.bluetooth_error_unavailable)
-            }
-
-            ConnectionStatus.CONNECTING -> {
-                messageTextView.text = getString(R.string.bluetooth_connecting)
-            }
-
-            ConnectionStatus.CONNECTED -> {
-                messageTextView.text = "" // wait for mavlink state updates
-            }
-
-            ConnectionStatus.ERROR -> {
-                messageTextView.text = getString(R.string.bluetooth_error_unknown)
-            }
-
-            ConnectionStatus.NEED_PERMISSIONS -> {
-                messageTextView.text = getString(R.string.bluetooth_error_permissions)
-                requestForPermissions()
-            }
+        if (connectionStatus == ConnectionStatus.NEED_PERMISSIONS) {
+            requestForPermissions()
         }
     }
 

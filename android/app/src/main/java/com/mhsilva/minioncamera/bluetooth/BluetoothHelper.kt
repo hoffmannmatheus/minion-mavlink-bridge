@@ -91,11 +91,16 @@ class BluetoothHelper(
         isScanning = true
     }
 
-    fun disconnect() {
+    fun disconnect(onPurpose: Boolean = false) {
         stopScan()
         bluetoothGatt?.disconnect()
         bluetoothGatt?.close()
         bluetoothGatt = null
+        if (onPurpose) {
+            listener.onDisconnected()
+        } else {
+            listener.onConnectFailed()
+        }
     }
 
     private fun stopScan() {
