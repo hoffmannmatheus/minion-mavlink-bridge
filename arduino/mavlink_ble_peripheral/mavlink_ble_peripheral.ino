@@ -12,6 +12,7 @@
 */
 
 #include <ArduinoBLE.h>
+#include "c_library_v2/common/mavlink.h"
 
 enum {
   COLOR_RED   = 0,
@@ -20,16 +21,17 @@ enum {
   COLOR_WHITE = 3
 };
 
-const char* deviceServiceUuid = "1a1a3616-e532-4a4c-87b1-19c4f4ec590b";
-const char* deviceServiceCharacteristicUuid = "6148df43-7c4c-4964-a1ad-bfbfb9032b97";
+// Bluetooh service
+BLEService mavlinkService("1a1a3616-e532-4a4c-87b1-19c4f4ec590b"); 
+// Bluetooth characteristics
+BLEStringCharacteristic mavlinkStateCharacteristic("6af662f3-5393-41ed-af8b-02fafe592177", BLERead | BLENotify | BLEIndicate, 256);
+BLEStringCharacteristic mavlinkTakePictureCharacteristic("7627ba39-df6b-44a9-b02a-e7d5eccdf94f", BLERead | BLENotify | BLEIndicate, 128);
 
 int mavlinkValue = 42;
 
-BLEService mavlinkService(deviceServiceUuid); 
-BLEStringCharacteristic mavlinkCharacteristic(deviceServiceCharacteristicUuid, BLERead | BLENotify | BLEIndicate, 128);
-
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(9600);   // USB serial, for debugging and logs
+  Serial1.begin(57600); // UART TX/RX connected to flight controller
   //while (!Serial);  Debug only
   
   pinMode(LEDR, OUTPUT);
@@ -46,7 +48,7 @@ void setup() {
   BLE.setLocalName("Arduino Nano 33 BLE (Peripheral)");
   BLE.setDeviceName("Arduino Nano 33 BLE");
   BLE.setAdvertisedService(mavlinkService);
-  mavlinkService.addCharacteristic(mavlinkCharacteristic);
+  mavlinkService.addCharacteristic(mavlinkStateCharacteristic);
   BLE.addService(mavlinkService);
   BLE.advertise();
 
@@ -59,14 +61,32 @@ void loop() {
   delay(500);
 
   if (central && central.connected() && BLE.connected()) {
-    Serial.print("* Writing value to mavlinkCharacteristic: ");
+    Serial.print("* Writing value to mavlinkStateCharacteristic: ");
     Serial.println(mavlinkValue);
     
     setColor(COLOR_GREEN);
-    mavlinkCharacteristic.writeValue(String(mavlinkValue));
+    mavlinkStateCharacteristic.writeValue(String(mavlinkValue));
   } else {
     setColor(COLOR_RED);
-    Serial.println("- Discovering central device...");
+    //Serial.println("- Discovering central device...");
   }
   mavlinkValue++;
+  mavLinkHeartbeat();
+}
+
+void on_mode_update(String armed_and_mode) {
+    Serial.print("on_mode_update: ");
+    Serial.println(armed_and_mode);
+}
+
+void on_mission_state_update(String sequence, String mission_state) {
+    Serial.print("on_mission_state_update: ");
+    Serial.print(sequence);  // Seems like this is the only value SpeedyBee is sending properly for now
+    Serial.print(" / ");
+    Serial.println(mission_state);
+}
+
+void on_picture_update(String sequence) {
+    Serial.print("on_picture_update: ");
+    Serial.println(sequence);
 }
