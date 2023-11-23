@@ -1,5 +1,13 @@
 
 
+void ledPinSetup() {
+  pinMode(LEDR, OUTPUT);
+  pinMode(LEDG, OUTPUT);
+  pinMode(LEDB, OUTPUT);
+  pinMode(LED_BUILTIN, OUTPUT);
+  setColor(-1);
+}
+
 void setColor(int color) {
    switch (color) {
       case COLOR_RED:

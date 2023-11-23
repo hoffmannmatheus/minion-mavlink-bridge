@@ -1,18 +1,15 @@
 /*
-  BLE_Peripheral.ino
-
-  This program uses the ArduinoBLE library to set-up an Arduino Nano 33 BLE 
-  as a peripheral device and specifies a service and a characteristic. Depending 
-  of the value of the specified characteristic, an on-board LED gets on. 
-
-  The circuit:
-  - Arduino Nano 33 BLE. 
-
-  This example code is in the public domain.
+  Main file
 */
 
 #include <ArduinoBLE.h>
 #include "c_library_v2/common/mavlink.h"
+
+// Definitions
+#define DEVICE_NAME                "Arduino Nano 33 BLE"
+#define BLE_HEARTBEAT_INTERVAL     500        // Milliseconds
+#define MAVLINK_HEARTBEAT_INTERVAL 1000       // Milliseconds
+#define BLE_STATE_UPDATE_SEPARATOR "|"
 
 enum {
   COLOR_RED   = 0,
@@ -21,72 +18,49 @@ enum {
   COLOR_WHITE = 3
 };
 
-// Bluetooh service
-BLEService mavlinkService("1a1a3616-e532-4a4c-87b1-19c4f4ec590b"); 
-// Bluetooth characteristics
-BLEStringCharacteristic mavlinkStateCharacteristic("6af662f3-5393-41ed-af8b-02fafe592177", BLERead | BLENotify | BLEIndicate, 256);
-BLEStringCharacteristic mavlinkTakePictureCharacteristic("7627ba39-df6b-44a9-b02a-e7d5eccdf94f", BLERead | BLENotify | BLEIndicate, 128);
-
-int mavlinkValue = 42;
+// State
+String last_mode_received          = "";
+String last_mission_seq_received   = "";
+String last_mission_state_received = "";
+String last_state_update_sent      = "";
 
 void setup() {
-  Serial.begin(9600);   // USB serial, for debugging and logs
-  Serial1.begin(57600); // UART TX/RX connected to flight controller
+  Serial.begin(9600); // USB serial, for debugging and logs
   //while (!Serial);  Debug only
   
-  pinMode(LEDR, OUTPUT);
-  pinMode(LEDG, OUTPUT);
-  pinMode(LEDB, OUTPUT);
-  pinMode(LED_BUILTIN, OUTPUT);
-  setColor(-1);
-
-  if (!BLE.begin()) {
-    Serial.println("- Starting Bluetooth® Low Energy module failed!");
-    while (1);
-  }
-
-  BLE.setLocalName("Arduino Nano 33 BLE (Peripheral)");
-  BLE.setDeviceName("Arduino Nano 33 BLE");
-  BLE.setAdvertisedService(mavlinkService);
-  mavlinkService.addCharacteristic(mavlinkStateCharacteristic);
-  BLE.addService(mavlinkService);
-  BLE.advertise();
-
-  Serial.println("Nano 33 BLE (Peripheral Device)");
-  Serial.println(" ");
+  ledPinSetup();
+  bluetoothSetup();
+  mavlinkSetup();
 }
 
 void loop() {
-  BLEDevice central = BLE.central();
-  delay(500);
+  bluetoothHeartbeat();
+  mavlinkHeartbeat();
+}
 
-  if (central && central.connected() && BLE.connected()) {
-    Serial.print("* Writing value to mavlinkStateCharacteristic: ");
-    Serial.println(mavlinkValue);
-    
-    setColor(COLOR_GREEN);
-    mavlinkStateCharacteristic.writeValue(String(mavlinkValue));
-  } else {
-    setColor(COLOR_RED);
-    //Serial.println("- Discovering central device...");
+// MavLink updates
+void on_mavlink_mode_update(String armed_and_mode) {
+  last_mode_received = armed_and_mode;
+  send_bluetooth_update_if_needed();
+}
+
+void on_mavlink_mission_state_update(String sequence, String mission_state) {
+  last_mission_seq_received = sequence;
+  last_mission_state_received = mission_state;
+  send_bluetooth_update_if_needed();
+}
+
+void on_mavlink_picture_update(String sequence) {
+  sendBluetoothPicureUpdate(sequence);
+}
+
+// Bluetooth write logic. Note we shouldn't spam BLE with writes.
+void send_bluetooth_update_if_needed() {
+  String new_state = last_mode_received + BLE_STATE_UPDATE_SEPARATOR
+                   + last_mission_seq_received + BLE_STATE_UPDATE_SEPARATOR
+                   + last_mission_state_received;
+  if (new_state != last_state_update_sent) {
+    sendBluetoothStateUpdate(new_state);
+    last_state_update_sent = new_state;
   }
-  mavlinkValue++;
-  mavLinkHeartbeat();
-}
-
-void on_mode_update(String armed_and_mode) {
-    Serial.print("on_mode_update: ");
-    Serial.println(armed_and_mode);
-}
-
-void on_mission_state_update(String sequence, String mission_state) {
-    Serial.print("on_mission_state_update: ");
-    Serial.print(sequence);  // Seems like this is the only value SpeedyBee is sending properly for now
-    Serial.print(" / ");
-    Serial.println(mission_state);
-}
-
-void on_picture_update(String sequence) {
-    Serial.print("on_picture_update: ");
-    Serial.println(sequence);
 }

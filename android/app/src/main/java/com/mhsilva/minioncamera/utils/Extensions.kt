@@ -13,6 +13,7 @@ fun Context.hasPermission(permissionType: String): Boolean {
     return ContextCompat.checkSelfPermission(this, permissionType) ==
             PackageManager.PERMISSION_GRANTED
 }
+
 fun Context.hasRequiredRuntimePermissions(): Boolean {
     return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         hasPermission(Manifest.permission.BLUETOOTH_SCAN) &&
@@ -21,17 +22,25 @@ fun Context.hasRequiredRuntimePermissions(): Boolean {
         hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)
     }
 }
+
 fun BluetoothGatt.printGattTable() {
     if (services.isEmpty()) {
-        Log.d("printGattTable", "No service and characteristic available, call discoverServices() first?")
+        Log.d(
+            "printGattTable",
+            "No service and characteristic available, call discoverServices() first?"
+        )
         return
     }
     services.forEach { service ->
         val characteristicsTable = service.characteristics.joinToString(
             separator = "\n|--",
-            prefix = "|--"
-        ) { it.uuid.toString() }
-        Log.d("printGattTable", "\nService ${service.uuid}\nCharacteristics:\n$characteristicsTable"
+            prefix = "|",
+        ) {
+            " uuid=${it.uuid} | readable=${it.isReadable()} | notifiable=${it.isNotifiable()} | indicatable=${it.isIndicatable()} |"
+        }
+        Log.d(
+            "printGattTable", "Service uuid=${service.uuid} " +
+                    "characteristics=\n$characteristicsTable"
         )
     }
 }

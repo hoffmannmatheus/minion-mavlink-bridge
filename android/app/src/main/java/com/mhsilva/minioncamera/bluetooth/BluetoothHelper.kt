@@ -53,8 +53,8 @@ class BluetoothHelper(
         /**
          * GATT UUIDs used by the device GATT Service & Characteristics.
          */
-        private val GATT_SERVICE_UUID = UUID.fromString("1a1a3616-e532-4a4c-87b1-19c4f4ec590b")
-        private val GATT_MAVLINK_CHARACTERISTIC_UUID = UUID.fromString("6148df43-7c4c-4964-a1ad-bfbfb9032b97")
+        private val GATT_UUID_SERVICE = UUID.fromString("1a1a3616-e532-4a4c-87b1-19c4f4ec590b")
+        private val GATT_UUID_CHAR_STATE = UUID.fromString("6af662f3-5393-41ed-af8b-02fafe592177")
 
         /**
          * Pre-defined UUID for the notification descriptor, used to enable characteristic update
@@ -131,8 +131,9 @@ class BluetoothHelper(
         device.connectGatt(context, true, gattCallback, BluetoothDevice.TRANSPORT_LE)
     }
 
-    private fun onConnectionComplete() {
-        Log.w(TAG, "onConnectionComplete")
+    private fun onConnectionComplete(gatt: BluetoothGatt?) {
+        Log.i(TAG, "onConnectionComplete. Will read characteristics last values")
+        readCharacteristic(gatt)
         listener.onConnected()
     }
 
@@ -143,23 +144,27 @@ class BluetoothHelper(
     }
 
     private fun readCharacteristic(gatt: BluetoothGatt?) {
+        if (gatt == null) {
+            Log.e(TAG, "readCharacteristic: Can't read with null gatt!")
+            return
+        }
         val characteristic = gatt
-            ?.getService(GATT_SERVICE_UUID)
-            ?.getCharacteristic(GATT_MAVLINK_CHARACTERISTIC_UUID)
+            .getService(GATT_UUID_SERVICE)
+            .getCharacteristic(GATT_UUID_CHAR_STATE)
         if (characteristic?.isReadable() == true) {
             Log.d(TAG, "Requesting read from characteristic $characteristic")
             gatt.readCharacteristic(characteristic)
         }
     }
-    private fun enableCharacteristicNotifications() {
+    private fun enableCharacteristicNotifications(characteristicUuid: UUID) {
         val gatt = bluetoothGatt
         if (gatt == null) {
             Log.e(TAG, "Not connected")
             return
         }
         val characteristic = gatt
-            .getService(GATT_SERVICE_UUID)
-            .getCharacteristic(GATT_MAVLINK_CHARACTERISTIC_UUID)
+            .getService(GATT_UUID_SERVICE)
+            .getCharacteristic(characteristicUuid)
         // First enable notifications
         val enableNotification = gatt.setCharacteristicNotification(characteristic, true)
         if (!enableNotification) {
@@ -184,6 +189,19 @@ class BluetoothHelper(
     private fun writeDescriptor(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, payload: ByteArray) {
         descriptor.value = payload
         gatt.writeDescriptor(descriptor)
+    }
+
+    private fun onUpdateCharacteristic(characteristic:BluetoothGattCharacteristic) {
+        val value = String(characteristic.value)
+        when (characteristic.uuid) {
+            GATT_UUID_CHAR_STATE -> {
+                Log.d(TAG, "MAVLink State characteristic value update: $value}")
+                listener.onMAVLinkStateUpdate(value)
+            }
+            else -> {
+                Log.d(TAG, "Unknown characteristic (${characteristic.uuid}) value update: $value")
+            }
+        }
     }
 
     private val gattCallback = object : BluetoothGattCallback() {
@@ -228,18 +246,15 @@ class BluetoothHelper(
                 return
             }
             Log.d(TAG, "onServicesDiscovered done. Status=$status Device=${gatt.device}")
-            gatt.printGattTable()
-            val characteristic = gatt
-                .getService(GATT_SERVICE_UUID)
-                .getCharacteristic(GATT_MAVLINK_CHARACTERISTIC_UUID)
-            val isReadable = characteristic?.isReadable() == true
-            val isNotifiable = characteristic?.isNotifiable() == true
-            Log.d(TAG, "characteristic = $GATT_MAVLINK_CHARACTERISTIC_UUID isReadable = $isReadable isNotifiable = $isNotifiable")
 
-            if (isNotifiable) {
-                enableCharacteristicNotifications()
+            val readableAndNotifiable = with(
+                gatt.getService(GATT_UUID_SERVICE).getCharacteristic(GATT_UUID_CHAR_STATE)
+            ) { isReadable() && (isNotifiable() || isIndicatable()) }
+            if (readableAndNotifiable) {
+                enableCharacteristicNotifications(GATT_UUID_CHAR_STATE)
             } else {
-                Log.e(TAG, "characteristic = $GATT_MAVLINK_CHARACTERISTIC_UUID doesn't have the required properties")
+                Log.e(TAG, "characteristics not readable or notifiable!")
+                gatt.printGattTable()
                 gatt.close()
                 onConnectionFailed()
             }
@@ -253,7 +268,7 @@ class BluetoothHelper(
             when (status) {
                 BluetoothGatt.GATT_SUCCESS -> {
                     Log.i(TAG, "Successfully wrote descriptor! $descriptor")
-                    onConnectionComplete() // finally we can get notifications about state change
+                    onConnectionComplete(gatt) // finally we can get notifications about state change
                 }
                 else -> {
                     Log.e(TAG, "Could not write descriptor $descriptor status = $status")
@@ -268,36 +283,22 @@ class BluetoothHelper(
             characteristic: BluetoothGattCharacteristic,
             status: Int
         ) {
-            with(characteristic) {
-                when (status) {
-                    BluetoothGatt.GATT_SUCCESS -> {
-                        Log.i(TAG, "Read characteristic $uuid:\n${String(value)}")
-                    }
-                    BluetoothGatt.GATT_READ_NOT_PERMITTED -> {
-                        Log.e(TAG, "Read not permitted for $uuid!")
-                    }
-                    else -> {
-                        Log.e(TAG, "Characteristic read failed for $uuid, error: $status")
-                    }
+            when (status) {
+                BluetoothGatt.GATT_SUCCESS -> {
+                    onUpdateCharacteristic(characteristic);
+                }
+                BluetoothGatt.GATT_READ_NOT_PERMITTED -> {
+                    Log.e(TAG, "Read not permitted for $characteristic!")
+                }
+                else -> {
+                    Log.e(TAG, "Characteristic read failed for $characteristic, error: $status")
                 }
             }
         }
 
         override fun onCharacteristicChanged(
             gatt: BluetoothGatt,
-            characteristic: BluetoothGattCharacteristic
-        ) {
-            val value = String(characteristic.value)
-            when (characteristic.uuid) {
-                GATT_MAVLINK_CHARACTERISTIC_UUID ->  {
-                    Log.d(TAG, "MAVLink State characteristic value update: $value}")
-                    listener.onMAVLinkStateUpdate(value)
-                }
-                else -> {
-                    Log.d(TAG, "Unknown characteristic (${characteristic.uuid}) value update: $value}")
-                }
-            }
-
-        }
+            char: BluetoothGattCharacteristic
+        )  = onUpdateCharacteristic(char)
     }
 }

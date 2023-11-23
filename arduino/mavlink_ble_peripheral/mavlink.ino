@@ -1,20 +1,24 @@
-// Mavlink variables
-#define START               1
-#define MSG_RATE            5       // Hertz
-#define AP_SYSID            1       // autopilot system id
-#define AP_CMPID            1       // autopilot component id
-#define THIS_SYSID          42      // autopilot component id
-#define THIS_CMPID          MAV_COMP_ID_CAMERA // autopilot component id
+// Definitions
+#define START             1
+#define MSG_RATE          5       // Hertz
+#define AP_SYSID          1       // autopilot system id
+#define AP_CMPID          1       // autopilot component id
+#define THIS_SYSID        42      // autopilot component id
+#define THIS_CMPID        MAV_COMP_ID_CAMERA // autopilot component id
+#define MAVLINK_UART_BAUD 57600 // Serial baud rate
 
+// State
 unsigned long previous_mavlink_heartbeat_time = 0;  // will store last time MAVLink was transmitted and listened
-unsigned long MAVLINK_INTERVAL = 1000;              // next interval to count
 const int MAVLINK_STREAMS_REQUEST_THRESHOLD = 60;   // # of heartbeats to wait before activating STREAMS from Pixhawk. 60 = one minute.
 int mavlink_heartbeats_count = MAVLINK_STREAMS_REQUEST_THRESHOLD;
 
-void mavLinkHeartbeat() {
+void mavlinkSetup() {
+  Serial1.begin(MAVLINK_UART_BAUD); // UART TX/RX connected to flight controller
+}
+
+void mavlinkHeartbeat() {
   unsigned long current_time = millis();
-  if (current_time - previous_mavlink_heartbeat_time >= MAVLINK_INTERVAL) {
-    // heartbeat control variables
+  if (current_time - previous_mavlink_heartbeat_time >= MAVLINK_HEARTBEAT_INTERVAL) {
     previous_mavlink_heartbeat_time = current_time;
     mavlink_heartbeats_count++;
 
@@ -106,11 +110,20 @@ void read_mavlink_uart() {
       // Handle message
       switch(msg.msgid) {
         case MAVLINK_MSG_ID_HEARTBEAT: { // #0: Heartbeat
-          //Serial.println("MavLink heartbeat");
+        
+          mavlink_heartbeat_t hb;
+          mavlink_msg_heartbeat_decode(&msg, &hb);
+
+          Serial.print("hb.custom_mode: " + String(hb.custom_mode));
+          Serial.print("  hb.type: " + String(hb.type));
+          Serial.print("  hb.autopilot: " + String(hb.autopilot));
+          Serial.print("  hb.base_mode: " + String(hb.base_mode));
+          Serial.print("  hb.system_status: " + String(hb.system_status));
+          Serial.println("  hb.mavlink_version: " + String(hb.mavlink_version));
         }
         break;
 
-        case MAVLINK_MSG_ID_SET_MODE: {  // #11: SET_MODE 
+        case MAVLINK_MSG_ID_SET_MODE: {  // #11: SET_MODE
           mavlink_set_mode_t set_mode;
           mavlink_msg_set_mode_decode(&msg, &set_mode);
 
@@ -159,7 +172,7 @@ void read_mavlink_uart() {
             }
             break;
           }
-          on_mode_update(armed_and_mode);
+          on_mavlink_mode_update(armed_and_mode);
         }
         break;
 
@@ -167,7 +180,7 @@ void read_mavlink_uart() {
           mavlink_mission_current_t mission_current;
           mavlink_msg_mission_current_decode(&msg, &mission_current);
           String sequence = String(mission_current.seq);
-          String mission_state = 	"unknown";
+          String mission_state = 	"";
           switch(mission_current.mission_state) {
             case MISSION_STATE_NO_MISSION: {
               mission_state = "no_mission";
@@ -190,7 +203,7 @@ void read_mavlink_uart() {
             }
             break;
           }
-          on_mission_state_update(sequence, mission_state);
+          on_mavlink_mission_state_update(sequence, mission_state);
         }
         break;
 
@@ -212,7 +225,7 @@ void read_mavlink_uart() {
           mavlink_camera_trigger_t camera_trigger;
           mavlink_msg_camera_trigger_decode(&msg, &camera_trigger);
           String sequence = String(camera_trigger.seq);
-          on_picture_update(sequence);
+          on_mavlink_picture_update(sequence);
         }
         break;
  
