@@ -19,7 +19,8 @@ void mavlinkSetup() {
 void mavlinkHeartbeat() {
   unsigned long current_time = millis();
   if (current_time - previous_mavlink_heartbeat_time >= MAVLINK_HEARTBEAT_INTERVAL) {
-    previous_mavlink_heartbeat_time = current_time;
+    previous_mavlink_heartbeat_time = 
+    current_time;
     mavlink_heartbeats_count++;
 
     // MAVLink config
@@ -93,6 +94,20 @@ void request_mavlink_data() {
     Serial1.write(buf, len);
     delay(10);
   }
+
+	mavlink_command_long_t com = { 0 };
+	com.target_system    = 1;
+	com.target_component = 0;
+	com.command          = MAV_CMD_SET_MESSAGE_INTERVAL;
+	com.confirmation     = 0;
+	com.param1           = MAVLINK_MSG_ID_CAMERA_TRIGGER;
+	com.param2           = 1000000;
+
+	// Encode
+	mavlink_message_t message;
+	mavlink_msg_command_long_encode(THIS_SYSID, THIS_CMPID, &message, &com);
+  uint16_t length = mavlink_msg_to_send_buffer(buf, &message);
+  Serial1.write(buf, length);
 }
 
 void read_mavlink_uart() {
@@ -104,75 +119,20 @@ void read_mavlink_uart() {
 
     if(mavlink_parse_char(MAVLINK_COMM_0, c, &msg, &status)) {
       
-      // Serial.print("MavLink got new message: ");
+      // Serial.print("MavLink got new message: "); // Debug only, very chatty
       // Serial.println(msg.msgid);
 
       // Handle message
       switch(msg.msgid) {
         case MAVLINK_MSG_ID_HEARTBEAT: { // #0: Heartbeat
-        
           mavlink_heartbeat_t hb;
           mavlink_msg_heartbeat_decode(&msg, &hb);
 
-          Serial.print("hb.custom_mode: " + String(hb.custom_mode));
-          Serial.print("  hb.type: " + String(hb.type));
-          Serial.print("  hb.autopilot: " + String(hb.autopilot));
-          Serial.print("  hb.base_mode: " + String(hb.base_mode));
-          Serial.print("  hb.system_status: " + String(hb.system_status));
-          Serial.println("  hb.mavlink_version: " + String(hb.mavlink_version));
-        }
-        break;
-
-        case MAVLINK_MSG_ID_SET_MODE: {  // #11: SET_MODE
-          mavlink_set_mode_t set_mode;
-          mavlink_msg_set_mode_decode(&msg, &set_mode);
-
-          Serial.print("set_mode.base_mode: ");
-          Serial.println(set_mode.base_mode);
-          Serial.print("set_mode.custom_mode: ");
-          Serial.println(set_mode.custom_mode);
-
-
-          String armed_and_mode = "disarmed;unknown";
-          switch(set_mode.base_mode) {
-            case MAV_MODE_PREFLIGHT: {
-              armed_and_mode = "disarmed;preflight";
-            }
-            break;
-            case MAV_MODE_STABILIZE_DISARMED: {
-              armed_and_mode = "disarmed;stabilize";
-            }
-            break;
-            case MAV_MODE_STABILIZE_ARMED: {
-              armed_and_mode = "armed;stabilize";
-            }
-            break;
-            case MAV_MODE_MANUAL_DISARMED: {
-              armed_and_mode = "disarmed;manual";
-            }
-            break;
-            case MAV_MODE_MANUAL_ARMED: {
-              armed_and_mode = "armed;manual";
-            }
-            break;
-            case MAV_MODE_GUIDED_DISARMED: {
-              armed_and_mode = "disarmed;guided";
-            }
-            break;
-            case MAV_MODE_GUIDED_ARMED: {
-              armed_and_mode = "armed;guided";
-            }
-            break;
-            case MAV_MODE_AUTO_DISARMED: {
-              armed_and_mode = "disarmed;auto";
-            }
-            break;
-            case MAV_MODE_AUTO_ARMED: {
-              armed_and_mode = "armed;auto";
-            }
-            break;
+          // Note! This logic assumes we are connected to a quadcopter. We need to filter 
+          // hearbeats by type, since GCS and other MavLink device heartbeats will be received.
+          if (hb.type == MAV_TYPE_QUADROTOR) {
+            on_mavlink_base_state_update(String(hb.base_mode));
           }
-          on_mavlink_mode_update(armed_and_mode);
         }
         break;
 
@@ -212,11 +172,9 @@ void read_mavlink_uart() {
           mavlink_msg_command_long_decode(&msg, &command_long);
           Serial.print("on_command_long: ");
           Serial.println(command_long.command);
-          //MAV_CMD_DO_SET_MODE
-          if (command_long.command == MAV_CMD_DO_SET_MODE) {
-            Serial.print("on_command_long is MAV_CMD_DO_SET_MODE, param1: ");
-            Serial.println(command_long.param1);
-            // TODO  on_mode_update(armed_and_mode);
+          if (command_long.command == MAV_CMD_DO_DIGICAM_CONTROL) {
+            Serial.println("on_command_long is MAV_CMD_DO_SET_MODE, param1: " + String(command_long.param1) + " param5: " + command_long.param5);
+            on_mavlink_digicam_command();
           }
         }
         break;
@@ -225,13 +183,8 @@ void read_mavlink_uart() {
           mavlink_camera_trigger_t camera_trigger;
           mavlink_msg_camera_trigger_decode(&msg, &camera_trigger);
           String sequence = String(camera_trigger.seq);
-          on_mavlink_picture_update(sequence);
-        }
-        break;
- 
-        case MAVLINK_MSG_ID_SERIAL_CONTROL: { // #126 
-            mavlink_serial_control_t serial_control;
-            mavlink_msg_serial_control_decode(&msg, &serial_control);
+            Serial.print("MAVLINK_MSG_ID_CAMERA_TRIGGER: ");
+            Serial.println(camera_trigger.seq);
         }
         break;
         

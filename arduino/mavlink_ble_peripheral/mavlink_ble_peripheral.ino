@@ -19,10 +19,11 @@ enum {
 };
 
 // State
-String last_mode_received          = "";
+String last_base_state_received    = "";
 String last_mission_seq_received   = "";
 String last_mission_state_received = "";
 String last_state_update_sent      = "";
+int last_digicam_command = 0;
 
 void setup() {
   Serial.begin(9600); // USB serial, for debugging and logs
@@ -39,8 +40,8 @@ void loop() {
 }
 
 // MavLink updates
-void on_mavlink_mode_update(String armed_and_mode) {
-  last_mode_received = armed_and_mode;
+void on_mavlink_base_state_update(String base_state) {
+  last_base_state_received = base_state;
   send_bluetooth_update_if_needed();
 }
 
@@ -50,15 +51,17 @@ void on_mavlink_mission_state_update(String sequence, String mission_state) {
   send_bluetooth_update_if_needed();
 }
 
-void on_mavlink_picture_update(String sequence) {
-  sendBluetoothPicureUpdate(sequence);
+void on_mavlink_digicam_command() {
+  last_digicam_command++;
+  send_bluetooth_update_if_needed();
 }
 
 // Bluetooth write logic. Note we shouldn't spam BLE with writes.
 void send_bluetooth_update_if_needed() {
-  String new_state = last_mode_received + BLE_STATE_UPDATE_SEPARATOR
+  String new_state = last_base_state_received + BLE_STATE_UPDATE_SEPARATOR
                    + last_mission_seq_received + BLE_STATE_UPDATE_SEPARATOR
-                   + last_mission_state_received;
+                   + last_mission_state_received + BLE_STATE_UPDATE_SEPARATOR
+                   + String(last_digicam_command);
   if (new_state != last_state_update_sent) {
     sendBluetoothStateUpdate(new_state);
     last_state_update_sent = new_state;
