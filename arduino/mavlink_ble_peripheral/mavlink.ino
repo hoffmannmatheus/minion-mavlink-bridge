@@ -94,20 +94,15 @@ void request_mavlink_data() {
     Serial1.write(buf, len);
     delay(10);
   }
+}
 
-	mavlink_command_long_t com = { 0 };
-	com.target_system    = 1;
-	com.target_component = 0;
-	com.command          = MAV_CMD_SET_MESSAGE_INTERVAL;
-	com.confirmation     = 0;
-	com.param1           = MAVLINK_MSG_ID_CAMERA_TRIGGER;
-	com.param2           = 1000000;
+void ack_command(uint16_t command_to_ack, uint8_t sender_sysid, uint8_t sender_compid) {
+  mavlink_message_t msg;
+  uint8_t buf[MAVLINK_MAX_PACKET_LEN];
+  mavlink_msg_command_ack_pack(THIS_SYSID, THIS_CMPID, &msg, command_to_ack, MAV_RESULT_ACCEPTED, 100, 0, sender_sysid, sender_compid);
 
-	// Encode
-	mavlink_message_t message;
-	mavlink_msg_command_long_encode(THIS_SYSID, THIS_CMPID, &message, &com);
-  uint16_t length = mavlink_msg_to_send_buffer(buf, &message);
-  Serial1.write(buf, length);
+	uint16_t len = mavlink_msg_to_send_buffer(buf, &msg);
+  Serial1.write(buf, len);
 }
 
 void read_mavlink_uart() {
@@ -151,8 +146,8 @@ void read_mavlink_uart() {
           Serial.print("on_command_long: ");
           Serial.println(command_long.command);
           if (command_long.command == MAV_CMD_DO_DIGICAM_CONTROL) {
-            Serial.println("on_command_long is MAV_CMD_DO_SET_MODE, param1: " + String(command_long.param1) + " param5: " + command_long.param5);
             on_mavlink_digicam_command();
+            ack_command(command_long.command, msg.sysid, msg.compid);
           }
         }
         break;
@@ -161,8 +156,8 @@ void read_mavlink_uart() {
           mavlink_camera_trigger_t camera_trigger;
           mavlink_msg_camera_trigger_decode(&msg, &camera_trigger);
           String sequence = String(camera_trigger.seq);
-            Serial.print("MAVLINK_MSG_ID_CAMERA_TRIGGER: ");
-            Serial.println(camera_trigger.seq);
+          Serial.print("MAVLINK_MSG_ID_CAMERA_TRIGGER: ");
+          Serial.println(camera_trigger.seq);
         }
         break;
         
