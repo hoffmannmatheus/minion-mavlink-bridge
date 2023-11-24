@@ -25,17 +25,29 @@ import com.mhsilva.minioncamera.utils.printGattTable
 import java.util.UUID
 
 /**
- * Abstracts all Bluetooth Low Energy connection complexity.
+ * Abstracts Bluetooth Low Energy connection complexity by connecting to our BLE device,
+ * establishing notifications, and providing data & connection status updates.
  *
- * This implementation is heavily based on this guide: https://punchthrough.com/android-ble-guide/
- * Here are the main steps:
- * 1) Scan for BLE devices, filtering by the known UUID (same UUID set in the Arduino)
- * 2) Connect to the device (via GATT)
- * 3) Get the devices Services & Characteristics
- * 4)
+ * This is the operation sequence for connecting and establishing notification-based updates with
+ * the Bluetooth Characteristic:
+ * 1) Scan for BLE devices, filtering by the known UUID (same UUID set in the Arduino).
+ * 2) Connect to the device (via GATT).
+ * 3) Get the devices Services & Characteristic.
+ * 4) Check whether the Characteristic is readable & notifiable.
+ * 5) Subscribe to the Characteristic notifications (write the notification GATT descriptor).
+ *   - After this step, we can finally consider the connection is "done".
+ * 6) Finally, read the latest value of the Characteristic.
+ *   - We will not receive a characteristic update notification unless the data changes
  *
+ * It is important to note that all of these operations are done only when the previous was
+ * confirmed (via BluetoothGattCallback), otherwise we might overwhelm the connection or enter into
+ * an unknown/inconsistent state.
  *
+ * This implementation is heavily based on this excellent guide: https://punchthrough.com/android-ble-guide/
  */
+
+
+// TODO: make BluetoothHelper be injectable via Dagger instead, and have LiveData variables for "connectionStatus" and "data" instead of a listener interface.
 @SuppressLint("MissingPermission")
 class BluetoothHelper(
     private val context: Context,
@@ -156,7 +168,7 @@ class BluetoothHelper(
             gatt.readCharacteristic(characteristic)
         }
     }
-    private fun enableCharacteristicNotifications(characteristicUuid: UUID) {
+    private fun enableCharacteristicNotifications() {
         val gatt = bluetoothGatt
         if (gatt == null) {
             Log.e(TAG, "Not connected")
@@ -164,7 +176,7 @@ class BluetoothHelper(
         }
         val characteristic = gatt
             .getService(GATT_UUID_SERVICE)
-            .getCharacteristic(characteristicUuid)
+            .getCharacteristic(GATT_UUID_CHAR_STATE)
         // First enable notifications
         val enableNotification = gatt.setCharacteristicNotification(characteristic, true)
         if (!enableNotification) {
@@ -251,7 +263,7 @@ class BluetoothHelper(
                 gatt.getService(GATT_UUID_SERVICE).getCharacteristic(GATT_UUID_CHAR_STATE)
             ) { isReadable() && (isNotifiable() || isIndicatable()) }
             if (readableAndNotifiable) {
-                enableCharacteristicNotifications(GATT_UUID_CHAR_STATE)
+                enableCharacteristicNotifications()
             } else {
                 Log.e(TAG, "characteristics not readable or notifiable!")
                 gatt.printGattTable()
