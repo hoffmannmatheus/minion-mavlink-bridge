@@ -12,9 +12,12 @@ import android.widget.TextView
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.mhsilva.minioncamera.MainActivity
 import com.mhsilva.minioncamera.R
 import com.mhsilva.minioncamera.databinding.FragmentHomeBinding
+import com.mhsilva.minioncamera.mavlink.MinionState
 
 class HomeFragment : Fragment() {
 
@@ -22,36 +25,42 @@ class HomeFragment : Fragment() {
     // These properties are only valid between onCreateView and onDestroyView.
     private val binding get() = _binding!!
     private lateinit var viewModel: HomeViewModel
-
     private lateinit var statusTextView: TextView
     private lateinit var messageTextView: TextView
     private lateinit var statusView: View
+    private lateinit var historyRecyclerView: RecyclerView
     private lateinit var connectButton: Button
 
     companion object {
-        const val REQUEST_ENABLE_BT = 42
-
         private const val TAG = "HomeFragment"
     }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
-        viewModel = ViewModelProvider(this)[HomeViewModel::class.java]
-
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
-        val root: View = binding.root
 
         statusTextView = binding.labelStatus
         messageTextView = binding.labelMessage
         statusView = binding.statusIndicator
+        historyRecyclerView = binding.historyList
         connectButton = binding.connectButton
 
+        historyRecyclerView.layoutManager = LinearLayoutManager(requireContext()).apply {
+            reverseLayout = true;
+            stackFromEnd = true;
+        }
+        historyRecyclerView.adapter = HistoryListAdapter()
+
+
+        viewModel = ViewModelProvider(this)[HomeViewModel::class.java]
         viewModel.connectionStatus.observe(viewLifecycleOwner) {
             handleStatusUpdate(it)
         }
         viewModel.mavlinkMode.observe(viewLifecycleOwner) {
-            messageTextView.text = it.toString()
+            it?.let { state ->
+                (historyRecyclerView.adapter as HistoryListAdapter).addItem(state)
+            }
         }
         connectButton.setOnClickListener {
             when (viewModel.connectionStatus.value) {
@@ -59,30 +68,21 @@ class HomeFragment : Fragment() {
                 else -> viewModel.disconnect()
             }
         }
-        return root
+
+        return binding.root
     }
 
-    override fun onStart() {
-        super.onStart()
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         viewModel.setupBluetooth(requireContext())
-        viewModel.connect(requireContext()) // TODO connect on button press
+        viewModel.connect(requireContext()) // TODO connect on button press only?
     }
-
 
     override fun onDestroyView() {
         super.onDestroyView()
         viewModel.disconnect()
         _binding = null
     }
-
-    private val stateToMessageMap = mapOf(
-        ConnectionStatus.STANDING_BY to R.string.bluetooth_ready,
-        ConnectionStatus.BLUETOOTH_DISABLED to R.string.bluetooth_error_disabled,
-        ConnectionStatus.BLUETOOTH_UNAVAILABLE to R.string.bluetooth_error_unavailable,
-        ConnectionStatus.CONNECTING to R.string.bluetooth_connecting,
-        ConnectionStatus.ERROR to R.string.bluetooth_error_unknown,
-        ConnectionStatus.NEED_PERMISSIONS to R.string.bluetooth_error_permissions
-    )
 
     private fun handleStatusUpdate(connectionStatus: ConnectionStatus) {
         Log.d(TAG, "handleStatusUpdate: ${connectionStatus.name}")
@@ -125,4 +125,43 @@ class HomeFragment : Fragment() {
             )
         }
     }
+
+    private val stateToMessageMap = mapOf(
+        ConnectionStatus.STANDING_BY to R.string.bluetooth_ready,
+        ConnectionStatus.BLUETOOTH_DISABLED to R.string.bluetooth_error_disabled,
+        ConnectionStatus.BLUETOOTH_UNAVAILABLE to R.string.bluetooth_error_unavailable,
+        ConnectionStatus.CONNECTING to R.string.bluetooth_connecting,
+        ConnectionStatus.ERROR to R.string.bluetooth_error_unknown,
+        ConnectionStatus.NEED_PERMISSIONS to R.string.bluetooth_error_permissions
+    )
+
+    private class HistoryListAdapter(private val dataSet: MutableList<MinionState> = mutableListOf()) :
+        RecyclerView.Adapter<HistoryListAdapter.ViewHolder>() {
+
+        class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+            val textView: TextView
+            init {
+                textView = view.findViewById(R.id.textView)
+            }
+        }
+
+        override fun onCreateViewHolder(viewGroup: ViewGroup, viewType: Int): ViewHolder {
+            val view = LayoutInflater.from(viewGroup.context)
+                .inflate(R.layout.history_list_item, viewGroup, false)
+            return ViewHolder(view)
+        }
+
+        override fun onBindViewHolder(viewHolder: ViewHolder, position: Int) {
+            viewHolder.textView.text = dataSet[position].toString()
+        }
+
+        override fun getItemCount() = dataSet.size
+
+        fun addItem(item: MinionState) {
+            val position = dataSet.size
+            dataSet.add(item)
+            notifyItemInserted(position)
+        }
+    }
+
 }
