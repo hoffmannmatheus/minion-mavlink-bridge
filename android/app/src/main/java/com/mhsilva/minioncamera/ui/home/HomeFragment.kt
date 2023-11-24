@@ -51,7 +51,7 @@ class HomeFragment : Fragment() {
             handleStatusUpdate(it)
         }
         viewModel.mavlinkMode.observe(viewLifecycleOwner) {
-            messageTextView.text = it
+            messageTextView.text = it.toString()
         }
         connectButton.setOnClickListener {
             when (viewModel.connectionStatus.value) {

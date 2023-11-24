@@ -80,7 +80,7 @@ class BluetoothHelper(
 
     fun connect() {
         if (isScanning) {
-            Log.d(TAG, "already scanning!")
+            Log.w(TAG, "already scanning!")
             return
         }
         Log.d(TAG, "starting scan...")
@@ -195,7 +195,7 @@ class BluetoothHelper(
         val value = String(characteristic.value)
         when (characteristic.uuid) {
             GATT_UUID_CHAR_STATE -> {
-                Log.d(TAG, "MAVLink State characteristic value update: $value}")
+                Log.d(TAG, "MAVLink State characteristic value update: $value")
                 listener.onMAVLinkStateUpdate(value)
             }
             else -> {

@@ -1,13 +1,14 @@
 package com.mhsilva.minioncamera.ui.home
 
-import android.R.bool
 import android.annotation.SuppressLint
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.mhsilva.minioncamera.bluetooth.BluetoothHelper
 import com.mhsilva.minioncamera.bluetooth.BluetoothHelperListener
+import com.mhsilva.minioncamera.mavlink.MinionState
 import com.mhsilva.minioncamera.utils.hasRequiredRuntimePermissions
 
 
@@ -19,11 +20,11 @@ class HomeViewModel : ViewModel() {
     }
 
     private val _connectionStatus = MutableLiveData(ConnectionStatus.SETTING_UP)
-    private val _mavLinkMode = MutableLiveData<String?>(null)
+    private val _mavLinkMode = MutableLiveData<MinionState?>(null)
     private var bluetoothHelper: BluetoothHelper? = null
 
     val connectionStatus: LiveData<ConnectionStatus> = _connectionStatus
-    val mavlinkMode: LiveData<String?> = _mavLinkMode
+    val mavlinkMode: LiveData<MinionState?> = _mavLinkMode
 
     fun setupBluetooth(context: Context) {
         _connectionStatus.value = ConnectionStatus.STANDING_BY
@@ -41,16 +42,12 @@ class HomeViewModel : ViewModel() {
                 _connectionStatus.postValue(ConnectionStatus.ERROR)
             }
             override fun onMAVLinkStateUpdate(value: String) {
-
-                // base mode, flags defined in https://mavlink.io/en/messages/common.html#MAV_MODE_FLAG
-//
-//                val isArmed: bool = hb.base_mode and (MAV_MODE_FLAG_SAFETY_ARMED > 0)
-//                val isStabilize: bool = hb.base_mode and (MAV_MODE_FLAG_STABILIZE_ENABLED > 0)
-//                val isAuto: bool = hb.base_mode and (MAV_MODE_FLAG_AUTO_ENABLED > 0)
-//                val isRcConnected: bool = hb.base_mode and (MAV_MODE_FLAG_MANUAL_INPUT_ENABLED > 0)
-//                val isCustom: bool = hb.base_mode and (MAV_MODE_FLAG_CUSTOM_MODE_ENABLED > 0)
-
-                _mavLinkMode.postValue(value)
+                val state = MinionState.fromString(value)
+                if (state != null) {
+                    _mavLinkMode.postValue(state)
+                } else {
+                    Log.d(TAG, "Received invalid mavlink update, cannot parse: $value")
+                }
             }
         })
     }

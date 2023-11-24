@@ -140,29 +140,7 @@ void read_mavlink_uart() {
           mavlink_mission_current_t mission_current;
           mavlink_msg_mission_current_decode(&msg, &mission_current);
           String sequence = String(mission_current.seq);
-          String mission_state = 	"";
-          switch(mission_current.mission_state) {
-            case MISSION_STATE_NO_MISSION: {
-              mission_state = "no_mission";
-            }
-            break;
-            case MISSION_STATE_NOT_STARTED: {
-              mission_state = "not_starter";
-            }
-            break;
-            case MISSION_STATE_ACTIVE: {
-              mission_state = "active";
-            }
-            break;
-            case 	MISSION_STATE_PAUSED: {
-              mission_state = "paused";
-            }
-            break;
-            case 	MISSION_STATE_COMPLETE: {
-              mission_state = "completed";
-            }
-            break;
-          }
+          String mission_state = String(mission_current.mission_state);
           on_mavlink_mission_state_update(sequence, mission_state);
         }
         break;

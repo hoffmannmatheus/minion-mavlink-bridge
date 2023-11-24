@@ -19,10 +19,10 @@ enum {
 };
 
 // State
+String last_state_update_sent      = "";
 String last_base_state_received    = "";
 String last_mission_seq_received   = "";
 String last_mission_state_received = "";
-String last_state_update_sent      = "";
 int last_digicam_command = 0;
 
 void setup() {
