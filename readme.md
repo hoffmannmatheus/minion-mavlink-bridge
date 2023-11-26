@@ -18,6 +18,13 @@ These are the Services and Characteristics UUIDs being used:
 - Some extra UUIDs if needed:
   - Generate more with https://bleid.netlify.app/
 
+## MAVLink camera control and this implementation
+
+This bridge will not setup Arduino as a true "MAVLink Camera", as it does not implement the full [camera device protocol for MAVLink](https://mavlink.io/en/services/camera.html).
+
+Notably, it will not receive MAVLink camera commands like `MAV_CMD_DO_DIGICAM_CONTROL` that may be sent during missions. I wasn't able to make that work yet. 
+
+Instead, this implementation uses Servos controls in order to trigger the camera. As [described in this forum post](https://www.rcgroups.com/forums/showpost.php?p=33408898&postcount=7), I'm connecting an Arduino PWM input to a servo (motor) output of my Flight Controller, and triggering the camera via `DO_SET_SERVO` commands in between waypoint missions. 
 
 ## Useful links
 

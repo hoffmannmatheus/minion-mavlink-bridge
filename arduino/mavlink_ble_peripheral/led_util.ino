@@ -1,4 +1,6 @@
-
+/*
+  Arduino led utilities.
+*/
 
 void ledPinSetup() {
   pinMode(LEDR, OUTPUT);

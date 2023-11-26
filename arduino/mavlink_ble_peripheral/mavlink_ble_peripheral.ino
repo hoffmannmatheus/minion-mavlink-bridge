@@ -1,5 +1,5 @@
 /*
-  Main file
+  Main file, handling Arduino setup and loop.
 */
 
 #include <ArduinoBLE.h>
@@ -32,11 +32,13 @@ void setup() {
   ledPinSetup();
   bluetoothSetup();
   mavlinkSetup();
+  servoSetup();
 }
 
 void loop() {
   bluetoothHeartbeat();
   mavlinkHeartbeat();
+  servoLoop();
 }
 
 // MavLink updates
@@ -51,7 +53,7 @@ void on_mavlink_mission_state_update(String sequence, String mission_state) {
   send_bluetooth_update_if_needed();
 }
 
-void on_mavlink_digicam_command() {
+void on_trigger_camera() {
   last_digicam_command++;
   send_bluetooth_update_if_needed();
 }

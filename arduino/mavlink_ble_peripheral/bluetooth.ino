@@ -1,3 +1,11 @@
+/*
+  Bluetooth Low Energy connection. 
+
+  This file defines the BLE service and one "state" characteristic, and provides the means
+  to write String values into this characteristic.
+
+  Arduino Nano 33 BLE docs: https://docs.arduino.cc/tutorials/nano-33-ble/bluetooth 
+*/
 
 // Bluetooh service
 #define BLE_UUID_SERVICE      "1a1a3616-e532-4a4c-87b1-19c4f4ec590b"

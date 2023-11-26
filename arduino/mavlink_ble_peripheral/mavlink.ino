@@ -1,11 +1,21 @@
+/*
+  MAVLink 2 logic and UART (Serial1, TX/RX) connection.
+
+  This file provides the means to receive and parse MAVLink data. This Arduino device is 
+  confiured to act like a "camera" type device (see THIS_CMPID in the definitions below).
+  It sends MAVLink heartbeat messages at 1Hz, requests data streams, and can parse messages.
+
+  We heavily depend on the MAVLink 2 C library: https://github.com/mavlink/c_library_v2
+  And the MAVLink protocol documentation: https://mavlink.io/ 
+*/
+
 // Definitions
-#define START             1
-#define MSG_RATE          5       // Hertz
-#define AP_SYSID          1       // autopilot system id
-#define AP_CMPID          1       // autopilot component id
-#define THIS_SYSID        42      // autopilot component id
-#define THIS_CMPID        MAV_COMP_ID_CAMERA // autopilot component id
-#define MAVLINK_UART_BAUD 57600 // Serial baud rate
+#define AP_SYSID          1                  // autopilot (flight controller) system id
+#define AP_CMPID          1                  // autopilot (flight controller) component id
+#define THIS_SYSID        42                 // This (arduino) system id
+#define THIS_CMPID        MAV_COMP_ID_CAMERA // This (arduino) component id
+#define MAVLINK_UART_BAUD 57600              // Serial baud rate
+#define MSG_RATE          5                  // Hertz
 
 // State
 unsigned long previous_mavlink_heartbeat_time = 0;  // will store last time MAVLink was transmitted and listened
@@ -50,50 +60,9 @@ void mavlinkHeartbeat() {
 void request_mavlink_data() {
   mavlink_message_t msg;
   uint8_t buf[MAVLINK_MAX_PACKET_LEN];
-
-  // STREAMS that can be requested
-  /*
-   * Definitions are in common.h: enum MAV_DATA_STREAM
-   *   
-   * MAV_DATA_STREAM_ALL=0, // Enable all data streams
-   * MAV_DATA_STREAM_RAW_SENSORS=1, /* Enable IMU_RAW, GPS_RAW, GPS_STATUS packets.
-   * MAV_DATA_STREAM_EXTENDED_STATUS=2, /* Enable GPS_STATUS, CONTROL_STATUS, AUX_STATUS
-   * MAV_DATA_STREAM_RC_CHANNELS=3, /* Enable RC_CHANNELS_SCALED, RC_CHANNELS_RAW, SERVO_OUTPUT_RAW
-   * MAV_DATA_STREAM_RAW_CONTROLLER=4, /* Enable ATTITUDE_CONTROLLER_OUTPUT, POSITION_CONTROLLER_OUTPUT, NAV_CONTROLLER_OUTPUT.
-   * MAV_DATA_STREAM_POSITION=6, /* Enable LOCAL_POSITION, GLOBAL_POSITION/GLOBAL_POSITION_INT messages.
-   * MAV_DATA_STREAM_EXTRA1=10, /* Dependent on the autopilot
-   * MAV_DATA_STREAM_EXTRA2=11, /* Dependent on the autopilot
-   * MAV_DATA_STREAM_EXTRA3=12, /* Dependent on the autopilot
-   * MAV_DATA_STREAM_ENUM_END=13,
-   * 
-   * Data in PixHawk available in:
-   *  - Battery, amperage and voltage (SYS_STATUS) in MAV_DATA_STREAM_EXTENDED_STATUS
-   *  - Gyro info (IMU_SCALED) in MAV_DATA_STREAM_EXTRA1
-    https://github.com/Clooney82/MavLink_FrSkySPort/blob/4d7cfdff116db1d8d25e5c82f106d341f4fcfc69/MavLink_FrSkySPort/Mavlink.ino#L103
-   */
-
-  // To be setup according to the needed information to be requested from the Pixhawk
-  const int  maxStreams = 1;
-  const uint8_t MAVStreams[maxStreams] = { MAV_DATA_STREAM_ALL };
-    
-  for (int i=0; i < maxStreams; i++) {
-    /*
-     * mavlink_msg_request_data_stream_pack(system_id, component_id, 
-     *    &msg, 
-     *    target_system, target_component, 
-     *    MAV_DATA_STREAM_POSITION, 10000000, 1);
-     *    
-     * mavlink_msg_request_data_stream_pack(uint8_t system_id, uint8_t component_id, 
-     *    mavlink_message_t* msg,
-     *    uint8_t target_system, uint8_t target_component, uint8_t req_stream_id, 
-     *    uint16_t req_message_rate, uint8_t start_stop)
-     * 
-     */
-    mavlink_msg_request_data_stream_pack(THIS_SYSID, THIS_CMPID, &msg, AP_SYSID, AP_CMPID, MAVStreams[i], MSG_RATE, START);
-    uint16_t len = mavlink_msg_to_send_buffer(buf, &msg);
-    Serial1.write(buf, len);
-    delay(10);
-  }
+  mavlink_msg_request_data_stream_pack(THIS_SYSID, THIS_CMPID, &msg, AP_SYSID, AP_CMPID, MAV_DATA_STREAM_ALL, MSG_RATE, 1);
+  uint16_t len = mavlink_msg_to_send_buffer(buf, &msg);
+  Serial1.write(buf, len);
 }
 
 void ack_command(uint16_t command_to_ack, uint8_t sender_sysid, uint8_t sender_compid) {
@@ -146,7 +115,7 @@ void read_mavlink_uart() {
           Serial.print("on_command_long: ");
           Serial.println(command_long.command);
           if (command_long.command == MAV_CMD_DO_DIGICAM_CONTROL) {
-            on_mavlink_digicam_command();
+            on_trigger_camera();
             ack_command(command_long.command, msg.sysid, msg.compid);
           }
         }
