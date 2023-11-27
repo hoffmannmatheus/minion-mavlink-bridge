@@ -7,14 +7,15 @@
   Arduino Nano 33 BLE docs: https://docs.arduino.cc/tutorials/nano-33-ble/bluetooth 
 */
 
-// Bluetooh service
-#define BLE_UUID_SERVICE      "1a1a3616-e532-4a4c-87b1-19c4f4ec590b"
-#define BLE_UUID_CHAR_STATE   "6af662f3-5393-41ed-af8b-02fafe592177"
+// Definitions
+#define BLE_UUID_SERVICE       "1a1a3616-e532-4a4c-87b1-19c4f4ec590b"
+#define BLE_UUID_CHAR_STATE    "6af662f3-5393-41ed-af8b-02fafe592177"
+#define BLE_HEARTBEAT_INTERVAL 100 // Milliseconds
 
 // State
 BLEService mavlinkService(BLE_UUID_SERVICE); 
 BLEStringCharacteristic mavlinkStateCharacteristic(BLE_UUID_CHAR_STATE, BLERead | BLENotify | BLEIndicate, 256);
-unsigned long previous_ble_heartbeat_time = 0;  // will store last time MAVLink was transmitted and listened
+unsigned long previous_ble_heartbeat_time = 0;
 bool notified_connected = false; // avoid serial spam
 bool notified_disconnected = false; // avoid serial spam
 
@@ -32,7 +33,7 @@ void bluetoothSetup() {
   BLE.advertise();
 }
 
-void bluetoothHeartbeat() {
+void bluetoothLoop() {
   unsigned long current_time = millis();
   if (current_time - previous_ble_heartbeat_time >= BLE_HEARTBEAT_INTERVAL) {
     previous_ble_heartbeat_time = current_time;

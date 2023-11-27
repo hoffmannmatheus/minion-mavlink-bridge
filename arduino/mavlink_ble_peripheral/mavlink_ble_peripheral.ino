@@ -7,8 +7,6 @@
 
 // Definitions
 #define DEVICE_NAME                "Arduino Nano 33 BLE"
-#define BLE_HEARTBEAT_INTERVAL     500        // Milliseconds
-#define MAVLINK_HEARTBEAT_INTERVAL 1000       // Milliseconds
 #define BLE_STATE_UPDATE_SEPARATOR "|"
 
 enum {
@@ -27,7 +25,7 @@ int last_digicam_command = 0;
 
 void setup() {
   Serial.begin(9600); // USB serial, for debugging and logs
-  //while (!Serial);  Debug only
+  //while (!Serial); // Debug only!
   
   ledPinSetup();
   bluetoothSetup();
@@ -36,8 +34,8 @@ void setup() {
 }
 
 void loop() {
-  bluetoothHeartbeat();
-  mavlinkHeartbeat();
+  bluetoothLoop();
+  mavlinkLoop();
   servoLoop();
 }
 

@@ -9,25 +9,34 @@
 */
 
 // Definitions
-#define SERVO_INPUT_PIN    A3     // Pin where the FC servo is connected
-#define PWM_HIGH_THRESHOLD 1400   // Threshold PWM value considered "servo is active"
+#define SERVO_INPUT_PIN             A3   // Pin where the FC servo is connected
+#define PWM_HIGH_THRESHOLD          1400 // Threshold PWM value considered "servo is active"
+#define PWM_READ_HEARTBEAT_INTERVAL 150  // Milliseconds interval of PWM
 
 // State
 bool last_pwm_high_state = false;
+unsigned long previous_pwm_read_time = 0;  // will store last time MAVLink was transmitted and listened
 
 void servoSetup() {
   pinMode(SERVO_INPUT_PIN, INPUT);
 }
 
 void servoLoop() {
-  int pwm = pulseIn(SERVO_INPUT_PIN, HIGH, 1000000);
-  bool is_pwm_high = pwm > PWM_HIGH_THRESHOLD;
+  unsigned long current_time = millis();
+  if (current_time - previous_pwm_read_time >= PWM_READ_HEARTBEAT_INTERVAL) {
+    previous_pwm_read_time = current_time;
 
-  if(is_pwm_high != last_pwm_high_state) {
-    last_pwm_high_state = is_pwm_high;
-    //Serial.println("Is PWM high: " + String(last_pwm_high_state));
-    if (last_pwm_high_state) { // only notify if activating
-      on_trigger_camera();
+    int pwm = pulseIn(SERVO_INPUT_PIN, HIGH, 50);
+    // int pwm = digitalRead(A3);  // read the input pin
+    // Serial.println(pwm);          // debug value
+    bool is_pwm_high = pwm > PWM_HIGH_THRESHOLD;
+
+    if(is_pwm_high != last_pwm_high_state) {
+      last_pwm_high_state = is_pwm_high;
+      //Serial.println("Is PWM high: " + String(last_pwm_high_state));
+      if (last_pwm_high_state) { // only notify if activating
+        on_trigger_camera();
+      }
     }
   }
 }

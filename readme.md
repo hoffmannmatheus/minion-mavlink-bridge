@@ -26,6 +26,8 @@ Notably, it will not receive MAVLink camera commands like `MAV_CMD_DO_DIGICAM_CO
 
 Instead, this implementation uses Servos controls in order to trigger the camera. As [described in this forum post](https://www.rcgroups.com/forums/showpost.php?p=33408898&postcount=7), I'm connecting an Arduino PWM input to a servo (motor) output of my Flight Controller, and triggering the camera via `DO_SET_SERVO` commands in between waypoint missions. 
 
+More info on the [`DO_SET_SERVO` here](Info here: https://ardupilot.org/planner/docs/common-mavlink-mission-command-messages-mav_cmd.html#mav-cmd-do-set-servo).
+
 ## Useful links
 
 - Excellent and expansive Android BLE article: https://punchthrough.com/android-ble-guide/

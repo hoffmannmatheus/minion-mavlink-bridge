@@ -10,23 +10,24 @@
 */
 
 // Definitions
-#define AP_SYSID          1                  // autopilot (flight controller) system id
-#define AP_CMPID          1                  // autopilot (flight controller) component id
-#define THIS_SYSID        42                 // This (arduino) system id
-#define THIS_CMPID        MAV_COMP_ID_CAMERA // This (arduino) component id
-#define MAVLINK_UART_BAUD 57600              // Serial baud rate
-#define MSG_RATE          5                  // Hertz
+#define MAVLINK_HEARTBEAT_INTERVAL  1000               // Milliseconds
+#define AP_SYSID                    1                  // autopilot (flight controller) system id
+#define AP_CMPID                    1                  // autopilot (flight controller) component id
+#define THIS_SYSID                  42                 // This (arduino) system id
+#define THIS_CMPID                  MAV_COMP_ID_CAMERA // This (arduino) component id
+#define MAVLINK_UART_BAUD           57600              // Serial baud rate
+#define MSG_RATE                    5                  // Hertz
 
 // State
-unsigned long previous_mavlink_heartbeat_time = 0;  // will store last time MAVLink was transmitted and listened
-const int MAVLINK_STREAMS_REQUEST_THRESHOLD = 60;   // # of heartbeats to wait before activating STREAMS from Pixhawk. 60 = one minute.
+unsigned long previous_mavlink_heartbeat_time = 0;
+const int MAVLINK_STREAMS_REQUEST_THRESHOLD = 60;  // # of heartbeats to wait before activating STREAMS from Pixhawk. 60 = one minute.
 int mavlink_heartbeats_count = MAVLINK_STREAMS_REQUEST_THRESHOLD;
 
 void mavlinkSetup() {
   Serial1.begin(MAVLINK_UART_BAUD); // UART TX/RX connected to flight controller
 }
 
-void mavlinkHeartbeat() {
+void mavlinkLoop() {
   unsigned long current_time = millis();
   if (current_time - previous_mavlink_heartbeat_time >= MAVLINK_HEARTBEAT_INTERVAL) {
     previous_mavlink_heartbeat_time = 
