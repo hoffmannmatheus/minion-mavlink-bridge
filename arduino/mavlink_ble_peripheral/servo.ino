@@ -9,7 +9,6 @@
 */
 
 // Definitions
-#define SERVO_INPUT_PIN                A3 // Pin where the FC servo is connected.
 #define PWM_READ_WINDOW               400 // Milliseconds interval of PWM window.
 #define PWM_HIGH_PERCENTAGE_THRESHOLD 6.9 // Minimum percentage of high reads within the window for "high pwm".
                                           // Note 1: Using "pulseIn" would be much better, but the fact that it 
@@ -20,6 +19,7 @@
                                           //   flight controller. There is certainly a better way to do this, 
                                           //   please yell at me if you know how.
                                           // TODO: Learn to calculate actual PWM values from ditigalRead.
+#define SERVO_INPUT_PIN               A3  // Pin where the FC servo is connected.
 
 // State
 unsigned long window_read_count = 0;
@@ -42,6 +42,7 @@ void servoLoop() {
   }
   
   window_read_count++;
+  // Use digitalRead instead of pulseIn. See comment in definitions.
   if (digitalRead(SERVO_INPUT_PIN) == HIGH) {
     window_high_count++;
   }
@@ -49,14 +50,12 @@ void servoLoop() {
 
 void notifyIfHigh() {
   float percentage = (float(window_high_count) / float(window_read_count)) * 100.0;
-
-  // Used to calculate the PWM_HIGH_PERCENTAGE_THRESHOLD while bench testing:
+  // Serial print to calculate the PWM_HIGH_PERCENTAGE_THRESHOLD while bench testing:
   //Serial.println("Window read. " + String(percentage) + "%. High/Total: " + String(window_high_count) + "/" + String(window_read_count));
   
   bool is_high = percentage > PWM_HIGH_PERCENTAGE_THRESHOLD;
   if(is_high != last_pwm_high_state) {
     last_pwm_high_state = is_high;
-    Serial.println("Is PWM high: " + String(last_pwm_high_state));
     if (last_pwm_high_state) { // only notify if activating
       onTriggerCamera();
     }

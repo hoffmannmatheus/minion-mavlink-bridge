@@ -39,7 +39,7 @@ void bluetoothLoop() {
     previous_ble_heartbeat_time = current_time;
 
     BLEDevice central = BLE.central();
-    if (central && central.connected() && BLE.connected()) {
+    if (central && central.connected()) {
       setColor(COLOR_GREEN);
 
       // Debug:

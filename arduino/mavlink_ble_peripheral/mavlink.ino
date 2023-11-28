@@ -50,15 +50,15 @@ void mavlinkLoop() {
 
     if (mavlink_heartbeats_count >= MAVLINK_STREAMS_REQUEST_THRESHOLD) {
       // Request streams from the Flight Controller
-      request_mavlink_data();
+      requestMavlinkData();
       mavlink_heartbeats_count = 0;
     }
   }
 
-  read_mavlink_uart();
+  readMavlinkUart();
 }
 
-void request_mavlink_data() {
+void requestMavlinkData() {
   mavlink_message_t msg;
   uint8_t buf[MAVLINK_MAX_PACKET_LEN];
   mavlink_msg_request_data_stream_pack(THIS_SYSID, THIS_CMPID, &msg, AP_SYSID, AP_CMPID, MAV_DATA_STREAM_ALL, MSG_RATE, 1);
@@ -66,7 +66,7 @@ void request_mavlink_data() {
   Serial1.write(buf, len);
 }
 
-void ack_command(uint16_t command_to_ack, uint8_t sender_sysid, uint8_t sender_compid) {
+void ackCommand(uint16_t command_to_ack, uint8_t sender_sysid, uint8_t sender_compid) {
   mavlink_message_t msg;
   uint8_t buf[MAVLINK_MAX_PACKET_LEN];
   mavlink_msg_command_ack_pack(THIS_SYSID, THIS_CMPID, &msg, command_to_ack, MAV_RESULT_ACCEPTED, 100, 0, sender_sysid, sender_compid);
@@ -75,7 +75,7 @@ void ack_command(uint16_t command_to_ack, uint8_t sender_sysid, uint8_t sender_c
   Serial1.write(buf, len);
 }
 
-void read_mavlink_uart() {
+void readMavlinkUart() {
   mavlink_message_t msg;
   mavlink_status_t status;
 
@@ -96,7 +96,7 @@ void read_mavlink_uart() {
           // Note! This logic assumes we are connected to a quadcopter. We need to filter 
           // hearbeats by type, since GCS and other MavLink device heartbeats will be received.
           if (hb.type == MAV_TYPE_QUADROTOR) {
-            on_mavlink_base_state_update(String(hb.base_mode));
+            onMavlinkBaseStateUpdate(String(hb.base_mode));
           }
         }
         break;
@@ -106,7 +106,7 @@ void read_mavlink_uart() {
           mavlink_msg_mission_current_decode(&msg, &mission_current);
           String sequence = String(mission_current.seq);
           String mission_state = String(mission_current.mission_state);
-          on_mavlink_mission_state_update(sequence, mission_state);
+          onMavlinkMissionStateUpdate(sequence, mission_state);
         }
         break;
 
@@ -116,8 +116,8 @@ void read_mavlink_uart() {
           Serial.print("on_command_long: ");
           Serial.println(command_long.command);
           if (command_long.command == MAV_CMD_DO_DIGICAM_CONTROL) {
-            on_trigger_camera();
-            ack_command(command_long.command, msg.sysid, msg.compid);
+            onTriggerCamera();
+            ackCommand(command_long.command, msg.sysid, msg.compid);
           }
         }
         break;

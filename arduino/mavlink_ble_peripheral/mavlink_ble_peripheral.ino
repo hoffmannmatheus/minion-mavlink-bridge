@@ -1,5 +1,15 @@
 /*
   Main file, handling Arduino setup and loop.
+
+  This file also gets "callbacks" that update the minion state, which basically is a selection of
+  MAVLink and picture trigger servo information.
+
+  If the state is updated, it is then written into the Bluetooth Characteristic, which can be
+  read by and notified to BLE devices.
+
+  The state is a sequence of numbers joined in a String, in the following format:
+    base_state | mission_seq | mission_state | digicam_command_seq
+  Where "base state" is a MAVLink heartbeat, and is parsed with MAV_MODE flags.
 */
 
 #include <ArduinoBLE.h>
@@ -40,24 +50,25 @@ void loop() {
 }
 
 // MavLink updates
-void on_mavlink_base_state_update(String base_state) {
+void onMavlinkBaseStateUpdate(String base_state) {
   last_base_state_received = base_state;
-  send_bluetooth_update_if_needed();
+  sendBluetoothUpdateIfNeeded();
 }
 
-void on_mavlink_mission_state_update(String sequence, String mission_state) {
+void onMavlinkMissionStateUpdate(String sequence, String mission_state) {
   last_mission_seq_received = sequence;
   last_mission_state_received = mission_state;
-  send_bluetooth_update_if_needed();
+  sendBluetoothUpdateIfNeeded();
 }
 
-void on_trigger_camera() {
+// Servo updates
+void onTriggerCamera() {
   last_digicam_command++;
-  send_bluetooth_update_if_needed();
+  sendBluetoothUpdateIfNeeded();
 }
 
 // Bluetooth write logic. Note we shouldn't spam BLE with writes.
-void send_bluetooth_update_if_needed() {
+void sendBluetoothUpdateIfNeeded() {
   String new_state = last_base_state_received + BLE_STATE_UPDATE_SEPARATOR
                    + last_mission_seq_received + BLE_STATE_UPDATE_SEPARATOR
                    + last_mission_state_received + BLE_STATE_UPDATE_SEPARATOR
