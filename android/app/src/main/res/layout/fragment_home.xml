@@ -37,10 +37,9 @@
         android:id="@+id/label_status"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_margin="@dimen/content_margin"
         android:textAlignment="center"
-        android:textSize="12sp"
-        app:layout_constraintEnd_toEndOf="parent"
+        style="@style/CameraLabelStyle"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -70,7 +69,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/history_list"
         android:layout_width="match_parent"
@@ -85,14 +83,12 @@
         app:layout_constraintTop_toBottomOf="@id/label_history_title"
         app:layout_constraintBottom_toTopOf="@+id/connect_button"/>
 
-
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/connect_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
+        android:layout_margin="@dimen/content_margin"
         android:text="@string/button_connect"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintBottom_toBottomOf="parent" />
 
@@ -100,10 +96,9 @@
         android:id="@+id/take_picture_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        android:text="take picture"
+        android:layout_margin="@dimen/content_margin"
+        android:text="@string/test_picture"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/connect_button"
         app:layout_constraintBottom_toBottomOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

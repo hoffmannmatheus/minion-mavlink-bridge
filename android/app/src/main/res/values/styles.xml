@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="CameraLabelStyle" parent="@android:style/Widget.TextView">
+        <item name="android:textSize">@dimen/camera_label_text_size</item>
+        <item name="android:textColor">?colorOnPrimary</item>
+        <item name="android:background">@drawable/camera_label_background</item>
+        <item name="android:padding">@dimen/camera_label_padding</item>
+    </style>
+</resources>

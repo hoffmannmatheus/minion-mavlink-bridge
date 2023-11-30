@@ -13,5 +13,6 @@
     <string name="bluetooth_error_unknown">Unknown error happened, please try again</string>
 
     <string name="button_connect">Connect</string>
+    <string name="test_picture">Test picture</string>
     <string name="button_disconnect">Disconnect</string>
 </resources>
