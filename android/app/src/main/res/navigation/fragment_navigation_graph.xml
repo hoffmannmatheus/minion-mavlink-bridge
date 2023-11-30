@@ -2,7 +2,7 @@
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/mobile_navigation"
+    android:id="@+id/fragment_navigation_graph"
     app:startDestination="@+id/navigation_home">
 
     <fragment
@@ -11,10 +11,10 @@
         android:label="@string/title_home"
         tools:layout="@layout/fragment_home" />
 
-<!--FIXME: enable when ready    <fragment-->
-<!--        android:id="@+id/navigation_library"-->
-<!--        android:name="com.mhsilva.minioncamera.ui.library.LibraryFragment"-->
-<!--        android:label="@string/title_library"-->
-<!--        tools:layout="@layout/fragment_library" />-->
+    <fragment
+        android:id="@+id/navigation_library"
+        android:name="com.mhsilva.minioncamera.ui.library.LibraryFragment"
+        android:label="@string/title_library"
+        tools:layout="@layout/fragment_library" />
 
 </navigation>

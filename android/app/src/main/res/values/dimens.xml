@@ -3,6 +3,8 @@
     <dimen name="activity_horizontal_margin">16dp</dimen>
     <dimen name="activity_vertical_margin">16dp</dimen>
 
+    <dimen name="status_border_padding">8dp</dimen>
+    <dimen name="video_border_radius">8dp</dimen>
     <dimen name="list_item_height">16dp</dimen>
     <dimen name="list_item_padding">4dp</dimen>
 </resources>

@@ -12,6 +12,7 @@ import android.view.LayoutInflater
 import android.view.Surface.ROTATION_90
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewOutlineProvider
 import android.widget.Button
 import android.widget.TextView
 import androidx.camera.core.Camera
@@ -49,7 +50,7 @@ class HomeFragment : Fragment() {
 
         private const val DATE_FORMAT = "yyyy-MM-dd-HH-mm-ss"
         private const val PHOTO_TYPE = "image/jpeg"
-        private const val FLASH_ANIMATION_DURATION = 100L;
+        private const val FLASH_ANIMATION_DURATION = 100L
     }
 
     private var _binding: FragmentHomeBinding? = null
@@ -89,11 +90,16 @@ class HomeFragment : Fragment() {
         historyRecyclerView = binding.historyList
         connectButton = binding.connectButton
 
+        binding.videoContainer.apply { // setup video round border
+            outlineProvider  = ViewOutlineProvider.BACKGROUND
+            binding.videoContainer.clipToOutline = true
+        }
+
         cameraExecutor = Executors.newSingleThreadExecutor()
 
         historyRecyclerView.layoutManager = LinearLayoutManager(requireContext()).apply {
-            reverseLayout = true;
-            stackFromEnd = true;
+            reverseLayout = true
+            stackFromEnd = true
         }
         historyRecyclerView.adapter = HistoryListAdapter()
 

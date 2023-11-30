@@ -297,7 +297,7 @@ class BluetoothHelper(
         ) {
             when (status) {
                 BluetoothGatt.GATT_SUCCESS -> {
-                    onUpdateCharacteristic(characteristic);
+                    onUpdateCharacteristic(characteristic)
                 }
                 BluetoothGatt.GATT_READ_NOT_PERMITTED -> {
                     Log.e(TAG, "Read not permitted for $characteristic!")
