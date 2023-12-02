@@ -34,54 +34,67 @@
     </FrameLayout>
 
     <TextView
-        android:id="@+id/label_status"
+        android:id="@+id/label_connection_status"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="@dimen/content_margin"
+        android:layout_marginTop="@dimen/content_margin"
+        android:layout_marginStart="@dimen/content_margin"
         android:textAlignment="center"
         style="@style/CameraLabelStyle"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <TextView
-        android:id="@+id/label_message"
+    <LinearLayout
+        android:id="@+id/minion_state_layout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="8dp"
-        android:textAlignment="center"
-        android:textSize="16sp"
+        android:layout_marginTop="@dimen/content_margin"
+        android:layout_marginEnd="@dimen/content_margin"
+        android:orientation="vertical"
+        android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/label_status" />
+        app:layout_constraintTop_toTopOf="parent">
 
-    <TextView
-        android:id="@+id/label_history_title"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="8dp"
-        android:textAlignment="center"
-        android:textSize="16sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        <TextView
+            android:id="@+id/label_minion_pictures"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/content_margin"
+            style="@style/CameraLabelStyle"
+            android:drawableStart="@drawable/ic_photo_camera_18"
+            android:drawablePadding="@dimen/camera_icon_padding"/>
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/history_list"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="8dp"
-        android:textAlignment="center"
-        android:textSize="16sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/label_history_title"
-        app:layout_constraintBottom_toTopOf="@+id/connect_button"/>
+        <TextView
+            android:id="@+id/label_minion_armed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/content_margin"
+            android:maxWidth="200dp"
+            style="@style/CameraLabelStyle"
+            android:drawableStart="@drawable/ic_upload_18"
+            android:drawablePadding="@dimen/camera_icon_padding" />
+
+        <TextView
+            android:id="@+id/label_minion_mode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/content_margin_small"
+            android:maxWidth="200dp"
+            style="@style/CameraLabelStyle"
+            android:drawableStart="@drawable/ic_airplane_18"
+            android:drawablePadding="@dimen/camera_icon_padding" />
+
+        <TextView
+            android:id="@+id/label_minion_mission"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/content_margin_small"
+            android:maxWidth="200dp"
+            style="@style/CameraLabelStyle"
+            android:drawableStart="@drawable/ic_location_18"
+            android:drawablePadding="@dimen/camera_icon_padding" />
+
+    </LinearLayout>
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/connect_button"

@@ -10,7 +10,6 @@ import com.mhsilva.minioncamera.bluetooth.BluetoothHelper
 import com.mhsilva.minioncamera.bluetooth.BluetoothHelperListener
 import com.mhsilva.minioncamera.mavlink.MinionState
 import com.mhsilva.minioncamera.utils.hasRequiredRuntimePermissions
-import com.mhsilva.minioncamera.utils.toast
 
 
 @SuppressLint("MissingPermission")
@@ -22,6 +21,7 @@ class HomeViewModel : ViewModel() {
 
     private val _connectionStatus = MutableLiveData(ConnectionStatus.SETTING_UP)
     private val _minionState = MutableLiveData<Pair<MinionState?, Boolean>>(null)
+    private val minionStateHistory = mutableListOf<MinionState>()
     private var bluetoothHelper: BluetoothHelper? = null
 
     val connectionStatus: LiveData<ConnectionStatus> = _connectionStatus
@@ -43,14 +43,14 @@ class HomeViewModel : ViewModel() {
                 _connectionStatus.postValue(ConnectionStatus.ERROR)
             }
             override fun onMAVLinkStateUpdate(value: String) {
-                val state = MinionState.fromString(value)
-                if (state != null) {
-                    var shouldTakePicture = false
-                    // Note that the first state will be null
-                    _minionState.value?.first?.pictureSequence?.let {
-                        shouldTakePicture = it != state.pictureSequence
+                val newState = MinionState.fromString(value)
+                var shouldTakePicture = false
+                if (newState != null) {
+                    _minionState.value?.first?.pictureSequence?.let { lastPictureSequence ->
+                        shouldTakePicture = lastPictureSequence != newState.pictureSequence
                     }
-                    _minionState.postValue(Pair(state, shouldTakePicture))
+                    _minionState.postValue(Pair(newState, shouldTakePicture))
+                    minionStateHistory.add(newState)
                 } else {
                     Log.d(TAG, "Received invalid mavlink update, cannot parse: $value")
                 }

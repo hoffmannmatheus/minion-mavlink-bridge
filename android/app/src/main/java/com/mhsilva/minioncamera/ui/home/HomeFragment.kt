@@ -30,8 +30,6 @@ import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.mhsilva.minioncamera.MainActivity
 import com.mhsilva.minioncamera.R
 import com.mhsilva.minioncamera.databinding.FragmentHomeBinding
@@ -54,17 +52,19 @@ class HomeFragment : Fragment() {
     }
 
     private var _binding: FragmentHomeBinding? = null
-    // These properties are only valid between onCreateView and onDestroyView.
     private val binding get() = _binding!!
     private lateinit var viewModel: HomeViewModel
-    private lateinit var statusTextView: TextView
-    private lateinit var messageTextView: TextView
+    private lateinit var connectionStatusTextView: TextView
+    private lateinit var minionPictureTextView: TextView
+    private lateinit var minionArmedTextView: TextView
+    private lateinit var minionMissionTextView: TextView
+    private lateinit var minionModeTextView: TextView
+    private lateinit var minionStateLayout: ViewGroup
     private lateinit var statusView: View
-    private lateinit var historyRecyclerView: RecyclerView
     private lateinit var connectButton: Button
+
+    // Camera and preview
     private var preview: Preview? = null
-
-
     private var imageCapture: ImageCapture? = null
     private var camera: Camera? = null
     private var cameraProvider: ProcessCameraProvider? = null
@@ -75,6 +75,7 @@ class HomeFragment : Fragment() {
         ConnectionStatus.BLUETOOTH_DISABLED to R.string.bluetooth_error_disabled,
         ConnectionStatus.BLUETOOTH_UNAVAILABLE to R.string.bluetooth_error_unavailable,
         ConnectionStatus.CONNECTING to R.string.bluetooth_connecting,
+        ConnectionStatus.CONNECTED to R.string.bluetooth_connected,
         ConnectionStatus.ERROR to R.string.bluetooth_error_unknown,
         ConnectionStatus.NEED_PERMISSIONS to R.string.bluetooth_error_permissions
     )
@@ -84,11 +85,14 @@ class HomeFragment : Fragment() {
     ): View {
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
 
-        statusTextView = binding.labelStatus
-        messageTextView = binding.labelMessage
+        connectionStatusTextView = binding.labelConnectionStatus
         statusView = binding.statusIndicator
-        historyRecyclerView = binding.historyList
         connectButton = binding.connectButton
+        minionPictureTextView = binding.labelMinionPictures
+        minionArmedTextView = binding.labelMinionArmed
+        minionMissionTextView = binding.labelMinionMission
+        minionModeTextView = binding.labelMinionMode
+        minionStateLayout = binding.minionStateLayout
 
         binding.videoContainer.apply { // setup video round border
             outlineProvider  = ViewOutlineProvider.BACKGROUND
@@ -97,11 +101,6 @@ class HomeFragment : Fragment() {
 
         cameraExecutor = Executors.newSingleThreadExecutor()
 
-        historyRecyclerView.layoutManager = LinearLayoutManager(requireContext()).apply {
-            reverseLayout = true
-            stackFromEnd = true
-        }
-        historyRecyclerView.adapter = HistoryListAdapter()
 
         viewModel = ViewModelProvider(this)[HomeViewModel::class.java]
         viewModel.connectionStatus.observe(viewLifecycleOwner) {
@@ -109,8 +108,8 @@ class HomeFragment : Fragment() {
         }
         viewModel.minionState.observe(viewLifecycleOwner) {
             it?.first?.let { state ->
-                (historyRecyclerView.adapter as HistoryListAdapter).addItem(state)
-                if (it.second /* should take picture? */) {
+                handleMinionStateUpdate(minionState=state)
+                if (it.second) {  // Should take picture?
                     takePicture(state.pictureSequence)
                 }
             }
@@ -133,10 +132,22 @@ class HomeFragment : Fragment() {
         return binding.root
     }
 
+    private fun handleMinionStateUpdate(minionState: MinionState) {
+        minionStateLayout.visibility = View.VISIBLE
+        minionPictureTextView.text = minionState.pictureSequence.toString()
+        minionArmedTextView.text = getString(if (minionState.isArmed) R.string.armed else R.string.disarmed)
+        minionMissionTextView.text = minionState.missionSequence.toString()
+        minionModeTextView.text = minionState.flightMode.toString()
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewModel.setupBluetooth(requireContext())
-        viewModel.connect(requireContext()) // TODO connect on button press only?
+    }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.connectionStatus.value?.let { handleStatusUpdate(it) }
     }
 
     override fun onDestroyView() {
@@ -148,20 +159,20 @@ class HomeFragment : Fragment() {
 
     private fun handleStatusUpdate(connectionStatus: ConnectionStatus) {
         Log.d(TAG, "handleStatusUpdate: ${connectionStatus.name}")
-        statusTextView.text = getString(R.string.status, connectionStatus.name)
         stateToMessageMap.getOrDefault(connectionStatus, null).let { resId ->
-            messageTextView.text = if(resId != null) getString(resId) else ""
+            connectionStatusTextView.text = if(resId != null) getString(resId) else ""
         }
 
         val state = when (connectionStatus) {
-            ConnectionStatus.CONNECTED -> android.R.attr.state_first
-            ConnectionStatus.ERROR -> android.R.attr.state_last
-            else -> android.R.attr.state_middle
+            ConnectionStatus.CONNECTED -> android.R.attr.state_first  // green
+            ConnectionStatus.ERROR -> android.R.attr.state_last  // red
+            else -> android.R.attr.state_middle  // blue
         }
         statusView.background.state = intArrayOf(state)
 
         val buttonText = when (connectionStatus) {
             ConnectionStatus.ERROR, ConnectionStatus.STANDING_BY -> R.string.button_connect
+            ConnectionStatus.CONNECTING -> R.string.button_cancel
             else -> R.string.button_disconnect
         }
         connectButton.text = getString(buttonText)
@@ -299,34 +310,4 @@ class HomeFragment : Fragment() {
                 { binding.root.foreground = null }, FLASH_ANIMATION_DURATION)
         }, FLASH_ANIMATION_DURATION)
     }
-
-    private class HistoryListAdapter(private val dataSet: MutableList<MinionState> = mutableListOf()) :
-        RecyclerView.Adapter<HistoryListAdapter.ViewHolder>() {
-
-        class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-            val textView: TextView
-            init {
-                textView = view.findViewById(R.id.textView)
-            }
-        }
-
-        override fun onCreateViewHolder(viewGroup: ViewGroup, viewType: Int): ViewHolder {
-            val view = LayoutInflater.from(viewGroup.context)
-                .inflate(R.layout.history_list_item, viewGroup, false)
-            return ViewHolder(view)
-        }
-
-        override fun onBindViewHolder(viewHolder: ViewHolder, position: Int) {
-            viewHolder.textView.text = dataSet[position].toString()
-        }
-
-        override fun getItemCount() = dataSet.size
-
-        fun addItem(item: MinionState) {
-            val position = dataSet.size
-            dataSet.add(item)
-            notifyItemInserted(position)
-        }
-    }
-
 }
