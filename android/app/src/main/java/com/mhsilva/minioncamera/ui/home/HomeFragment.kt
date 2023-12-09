@@ -214,7 +214,7 @@ class HomeFragment : Fragment() {
             .setTargetRotation(ROTATION_90)
             .build()
         imageCapture = ImageCapture.Builder()
-            .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
             .setResolutionSelector(selector)
             .setTargetRotation(ROTATION_90)
             .build()
