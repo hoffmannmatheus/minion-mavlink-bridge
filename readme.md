@@ -23,7 +23,7 @@ In practice, I ran into issues that I describe below. This isn't the end though,
 
 This project is somewhat of a failed experiment, or at least not usable with my device.
 
-Even though I'm not going to use this anymore, I was able to learn so much from this experience. I took a nice look into MAVLink and Ardupilo, learned about Bluetooth connectivity, and practiced some Android development.
+Even though I'm not going to use this anymore, I was able to learn so much from this experience. I took a nice look into MAVLink and Ardupilot, learned about Bluetooth connectivity, and practiced some Android development.
 
 I was able to code and connect all key pieces, but one crucial hardware issue I wasn't able to overcome: the camera stabilitization wasn't good enough to take clear pictures.
 I used my spare Moto G Power, which admitedly is not known for having great camera hardware.
@@ -110,7 +110,7 @@ I'm using the Arduino Nano 33 BLE board as the interface between my flight contr
 
 ### Arduino + Android App
 
-This arduino is setup as a BLE peripheral, and it creates readable / notifiable BLE GATT characteristics. It ended up being quite easy to code this following [Arduino's BLE examples](https://docs.arduino.cc/tutorials/nano-33-ble-sense/ble-device-to-device).
+This arduino is setup as a BLE peripheral, and it creates a readable & notifiable BLE GATT characteristic. It ended up being quite easy to code this following [Arduino's BLE examples](https://docs.arduino.cc/tutorials/nano-33-ble-sense/ble-device-to-device).
 
 The characteristic is written once a change in the "minion state" is detected. The state is really a small, condensed string created from the data retrieved by the MAVLink heartbeats being received.
 
@@ -119,11 +119,15 @@ The [Minion State format is better described in the code](https://github.com/hof
 
 
 ### Connection between Arduino + Flight Controller
-- UART, using RX/TX. Arduino has this preset as `Serial1`. Using baud rate 57600 as configured from the Flight Controller.
-- [MAVLink protocol](https://mavlink.io/en/). I'm using the [official C generated headers](https://github.com/mavlink/c_library_v2/), as a submodule.
-  - The Arduino registers as a "camera" device type, sending MAVLink heartbeats at 1hz.
-- From the Flight Controller, the correct Serial must be configured in Ardupilot. In my case using `BAUD 57`, and `PROTOCOL 2` (meaning, MAVLink2 -- the version of MAVLink we are using).
-  - This post has a similar setup with a lot of detail: https://discuss.ardupilot.org/t/mavlink-and-arduino-step-by-step/25566
+
+First of course, I started with my existing Minion Mk3 DIY drone. It already had Ardupilot setup, so I only added the arduino to it.
+
+The Arduino connects to the SpeedyBee F403V3 via UART, using the RX/TX pads on both sides. The Arduino already has UART as a preset `Serial1`, so it's just a matter of setting the same baud rate (57600) as configured from the Flight Controller.
+
+From the Flight Controller, the correct Serial must be configured in the Ardupilot parameters. In my case using `BAUD 57`, and `PROTOCOL 2` (meaning, MAVLink2 -- the version of MAVLink we are using). This post has a similar setup with a lot of detail: https://discuss.ardupilot.org/t/mavlink-and-arduino-step-by-step/25566
+
+Finally, to help with the actual communication protocol [MAVLink protocol](https://mavlink.io/en/), I'm using the [official C generated headers](https://github.com/mavlink/c_library_v2/) as a submodule. The Arduino registers as a "camera" device type, sending MAVLink heartbeats at 1hz.
+
 
 <div align="center">
   
@@ -146,9 +150,9 @@ More info on the [DO_SET_SERVO here](Info here: https://ardupilot.org/planner/do
 ## Bluetooth UUIDs
 
 These are the Services and Characteristics UUIDs being used:
-- Arduino client: `1a1a3616-e532-4a4c-87b1-19c4f4ec590b`
+- Arduino client service: `1a1a3616-e532-4a4c-87b1-19c4f4ec590b`
 - Predefined Notification Descriptor: `00002902-0000-1000-8000-00805f9b34fb`
-- Characteristic for the minion state characteristic: `6af662f3-5393-41ed-af8b-02fafe592177`
+- Characteristic for the minion state: `6af662f3-5393-41ed-af8b-02fafe592177`
 
 Online tool to generate UUIDs as needed: https://bleid.netlify.app/
 
