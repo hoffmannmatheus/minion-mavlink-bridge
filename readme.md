@@ -1,7 +1,81 @@
 
-# Minion MAVLink camera 
+# Minion MAVLink camera
+
+An Android phone as a UAV (unmanned aerial vehicle) camera that can take pictures autonomously.
+
+![PXL_20231110_212310584_S](https://github.com/hoffmannmatheus/minion-mavlink-bridge/assets/889815/8cde429c-507e-4e9d-b986-32259579e030)
+<div align="center">
+  The Minion Mk3, running Ardupilot in position hold mode.
+</div>
+
+## Objective
+
+My ida is to make a virtual balcony, 100ft up above my house, so I can get pictures of the sunset. So the objective is to take pictures of the landscape above my home, from a specific altitute, position and orientation, consistently across different days.
+
+In theory, this can be accomplished by creating a waypoint mission that the UAV can follow, which includes an instruction to take a picture at the right time. Once setup, I would simply need to get the UAV in the air, and let it execute mission.
+
+In practice, I ran into issues that I describe below. This isn't the end though!
 
 
+## ⚠️ Note, this project is on halt
+
+This project is somewhat of a failed experiment, or at least not in a usable state. 
+
+I was able to code and connect all key pieces, but one crucial hardware issue I wasn't able to overcome: the camera stabilitization wasn't good enough to take clear pictures.
+I used my spare Moto G Power, which admitedly is not known for having great camera hardware.
+
+Here's one example:
+
+<div align="center">
+  
+  ![minion-2023-12-02-13-09-12-seq-2-S](https://github.com/hoffmannmatheus/minion-mavlink-bridge/assets/889815/6904fe28-2242-45f7-bcc6-9d77ecf4c25d)
+  
+  Trees, kinda. Taken with Moto G Power.
+</div>
+
+After the beautiful results you can see above, I installed vibration dampaners built for the purpose of stabilizing camera devices (this is pretty obvious in retrospect!).
+
+<div align="center">
+  
+  ![dampener](https://github.com/hoffmannmatheus/minion-mavlink-bridge/assets/889815/492c0056-ed29-49f8-80e9-eeab0d713ec5)
+  
+  Vibration dampeners.
+</div>
+
+I know, the picture above hints at a GoPro, and not my old Moto G Power, but that's because I'm writing in the future :-).
+
+Still, even with the vibration dampeners, I got bad results. I also tried different [CAMERA_MODES](https://developer.android.com/reference/androidx/camera/core/ImageCapture#CAPTURE_MODE_MINIMIZE_LATENCY()) in CameraX, but no luck. 
+Last sample:
+
+<div align="center">
+  
+  ![minion-2023-12-04-23-03-39-seq-4-S](https://github.com/hoffmannmatheus/minion-mavlink-bridge/assets/889815/6584c04c-e61f-4b0d-8070-907de7dc79e5)
+
+  Minion selfie, with vibration dampeners, taken from the Moto G Power.
+</div>
+
+At this point, I'm willing to throw money at the problem, since there exists a plethora of better camers fit for purpose with image stabilization.
+I have not tested with higher end Android phones, but its possible that we could see better results. It's also possible there are more things that can be done softweare-wise.
+
+But I chose instead to pause this effort, and restart with a GoPro instead. These cameras are built for applications like this, and after some testing, the results are worlds appart. I'll start another repo for that project though. 
+
+I'll keep this project around as it can still be used as showcase, and maybe the Arduino code especially might be useful for other people.
+
+Thanks, bye!
+
+
+
+----
+Below docs serve as archive:
+
+## Overview
+There are three main components to this project:
+1. `android/`: native Android application that connects to our bluetooth device, gets state updates from the UAV, and can take pictures on command.
+2. `arduino/`: a microcontroller directly connected to the UAV's flight controller, communicatating with it via the [MAVLink protocol](https://mavlink.io/en/), and relaying state to the Android app via bluetooth.
+3. UAV: the drone, sporting a flight controller running [Ardupilot](https://ardupilot.org/), connected to the arduino board via UART.
+
+
+## Hardware
 
 
 ## Bluetooth information
